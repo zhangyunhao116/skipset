@@ -2,12 +2,12 @@ package skiplist
 
 import (
 	"fmt"
-	"github.com/ZYunH/lockedsource"
-	atom "go.uber.org/atomic"
 	"math/rand"
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	"github.com/ZYunH/lockedsource"
 )
 
 const (
@@ -26,8 +26,8 @@ type SkipList struct {
 type Node struct {
 	score       int64
 	next        []*Node
-	marked      atom.Bool
-	fullyLinked atom.Bool
+	marked      bool
+	fullyLinked bool
 	mu          sync.Mutex
 }
 
@@ -35,8 +35,8 @@ func newNode(score int64, level int) *Node {
 	return &Node{
 		score:       score,
 		next:        make([]*Node, level),
-		marked:      *atom.NewBool(false),
-		fullyLinked: *atom.NewBool(true),
+		marked:      false,
+		fullyLinked: true,
 	}
 }
 
@@ -123,8 +123,8 @@ func (s *SkipList) Insert(score int64) bool {
 		lFound := s.findNodeSimple(score, &preds, &succs)
 		if lFound != -1 { // indicating the score is already in the skip-list
 			nodeFound := succs[lFound]
-			if !nodeFound.marked.Load() {
-				for !nodeFound.fullyLinked.Load() {
+			if !nodeFound.marked {
+				for !nodeFound.fullyLinked {
 					// The node is not yet fully linked, just waits until it is.
 				}
 				return false
@@ -152,7 +152,7 @@ func (s *SkipList) Insert(score int64) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.marked.Load() && !succ.marked.Load() && pred.next[layer] == succ
+			valid = !pred.marked && !succ.marked && pred.next[layer] == succ
 		}
 		if !valid {
 			unlock(preds, highestLocked)
@@ -164,7 +164,7 @@ func (s *SkipList) Insert(score int64) bool {
 			nn.next[i] = succs[i]
 			preds[i].next[i] = nn
 		}
-		nn.fullyLinked.Store(true)
+		nn.fullyLinked = true
 		unlock(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
@@ -180,7 +180,7 @@ func (s *SkipList) Contains(score int64) bool {
 
 		// Check if the score already in the skip list.
 		if x.next[i] != s.tail && score == x.next[i].score {
-			return x.next[i].fullyLinked.Load() && !x.next[i].marked.Load()
+			return x.next[i].fullyLinked && !x.next[i].marked
 		}
 	}
 	return false
@@ -196,18 +196,18 @@ func (s *SkipList) Remove(score int64) bool {
 	for {
 		lFound := s.findNode(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
-			lFound != -1 && succs[lFound].fullyLinked.Load() && !succs[lFound].marked.Load() && (len(succs[lFound].next)-1) == lFound {
+			lFound != -1 && succs[lFound].fullyLinked && !succs[lFound].marked && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
 				nodeToDelete = succs[lFound]
 				topLayer = lFound
 				nodeToDelete.mu.Lock()
-				if nodeToDelete.marked.Load() {
+				if nodeToDelete.marked {
 					// The node is marked by another process,
 					// the physical deletion will be accomplished by another process.
 					nodeToDelete.mu.Unlock()
 					return false
 				}
-				nodeToDelete.marked.Store(true)
+				nodeToDelete.marked = true
 				isMarked = true
 			}
 			// Accomplish the physical deletion.
@@ -228,7 +228,7 @@ func (s *SkipList) Remove(score int64) bool {
 				// It is valid if:
 				// 1. the previous node exists.
 				// 2. no another node has inserted into the skip list in this layer.
-				valid = !pred.marked.Load() && pred.next[layer] == succ
+				valid = !pred.marked && pred.next[layer] == succ
 			}
 			if !valid {
 				unlock(preds, highestLocked)

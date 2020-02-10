@@ -1,4 +1,4 @@
-package skiplist
+package skipset
 
 import (
 	"flag"
@@ -93,8 +93,8 @@ func (c *benchArrayCache) rcount() {
 
 var benchArray = newBench(1.1 * 10000000)
 
-func newSkipSet(num int) *SkipSet {
-	l := New()
+func newSkipSet(num int) *Int64Set {
+	l := NewInt64()
 	var wg sync.WaitGroup
 	for i := 0; i < num; i++ {
 		i := i
@@ -123,12 +123,12 @@ func newSyncMap(num int) sync.Map {
 	return l
 }
 
-func TestNew(t *testing.T) {
+func TestNewInt64(t *testing.T) {
 	if *tt == 0 {
 		t.Skip("notest")
 	}
 	// Correctness.
-	l := New()
+	l := NewInt64()
 	if l.length != 0 {
 		t.Fatal("invalid length")
 	}
@@ -202,7 +202,7 @@ func TestNew(t *testing.T) {
 			} else {
 				l.Delete(benchArray.Insert[rand.Intn(num)])
 			}
-			if rand.Intn(10000) == 0 {
+			if rand.Intn(100000) == 0 {
 				l.Range(func(i int, score int64) bool {
 					return true
 				})
@@ -214,7 +214,7 @@ func TestNew(t *testing.T) {
 }
 
 func BenchmarkInsert_SkipSet(b *testing.B) {
-	l := New()
+	l := NewInt64()
 	defer benchArray.rcount()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {

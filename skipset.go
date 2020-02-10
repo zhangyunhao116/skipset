@@ -5,6 +5,7 @@ import (
 	"sync/atomic"
 )
 
+// Int64Set represents a set based on skip list in ascending order.
 type Int64Set struct {
 	header *int64Node
 	tail   *int64Node

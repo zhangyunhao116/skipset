@@ -1,10 +1,13 @@
 package skiplist
 
 import (
+	"flag"
 	"math/rand"
 	"sync"
 	"testing"
 )
+
+var tt = flag.Int("tt", 1, "test times")
 
 type benchArrayCache struct {
 	length      int
@@ -90,7 +93,40 @@ func (c *benchArrayCache) rcount() {
 
 var benchArray = newBench(1.1 * 10000000)
 
+func newSkipSet(num int) *SkipSet {
+	l := New()
+	var wg sync.WaitGroup
+	for i := 0; i < num; i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			l.Insert(benchArray.Insert[i])
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	return l
+}
+
+func newSyncMap(num int) sync.Map {
+	var l sync.Map
+	var wg sync.WaitGroup
+	for i := 0; i < num; i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			l.Store(benchArray.Insert[i], nil)
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	return l
+}
+
 func TestNew(t *testing.T) {
+	if *tt == 0 {
+		t.Skip("notest")
+	}
 	// Correctness.
 	l := New()
 	if l.length != 0 {
@@ -103,12 +139,12 @@ func TestNew(t *testing.T) {
 	if !l.Contains(0) {
 		t.Fatal("invalid contains")
 	}
-	if !l.Remove(0) || l.length != 0 {
+	if !l.Delete(0) || l.length != 0 {
 		t.Fatal("invalid delete")
 	}
 
 	// Concurrent insert.
-	num := 1000000 // one million
+	num := 1000000 * *tt // one million * tt
 	var wg sync.WaitGroup
 	for i := 0; i < num; i++ {
 		i := i
@@ -142,7 +178,7 @@ func TestNew(t *testing.T) {
 		i := i
 		wg.Add(1)
 		go func() {
-			if !l.Remove(benchArray.Insert[i]) {
+			if !l.Delete(benchArray.Insert[i]) {
 				wg.Done()
 				t.Fatalf("can't delete %d", i)
 			}
@@ -164,7 +200,12 @@ func TestNew(t *testing.T) {
 			} else if r == 1 {
 				l.Contains(benchArray.Insert[rand.Intn(num)])
 			} else {
-				l.Remove(benchArray.Insert[rand.Intn(num)])
+				l.Delete(benchArray.Insert[rand.Intn(num)])
+			}
+			if rand.Intn(10000) == 0 {
+				l.Range(func(i int, score int64) bool {
+					return true
+				})
 			}
 			wg.Done()
 		}()
@@ -174,33 +215,29 @@ func TestNew(t *testing.T) {
 
 func BenchmarkInsert_SkipSet(b *testing.B) {
 	l := New()
+	defer benchArray.rcount()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			l.Insert(benchArray.Insert[benchArray.next()])
 		}
 	})
-	benchArray.rcount()
 }
 
 func BenchmarkInsert_SyncMap(b *testing.B) {
 	var l sync.Map
+	defer benchArray.rcount()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			l.Store(benchArray.Insert[benchArray.next()], nil)
 		}
 	})
-	benchArray.rcount()
 }
 
 func Benchmark50Insert50Contains_SkipSet(b *testing.B) {
-	l := New()
-	var i int
-	for i < 1000 {
-		l.Insert(benchArray.Insert[i])
-		i++
-	}
+	l := newSkipSet(1000)
+	defer benchArray.rcount()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -212,16 +249,11 @@ func Benchmark50Insert50Contains_SkipSet(b *testing.B) {
 			}
 		}
 	})
-	benchArray.rcount()
 }
 
 func Benchmark50Insert50Contains_SyncMap(b *testing.B) {
-	var l sync.Map
-	var i int
-	for i < 1000 {
-		l.Store(benchArray.Insert[i], nil)
-		i++
-	}
+	l := newSyncMap(1000)
+	defer benchArray.rcount()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -229,20 +261,15 @@ func Benchmark50Insert50Contains_SyncMap(b *testing.B) {
 			if benchArray.Rnd55[u] == true {
 				l.Store(benchArray.Insert[u], nil)
 			} else {
-				l.Load(benchArray.Insert[u])
+				l.Load(benchArray.Check[u])
 			}
 		}
 	})
-	benchArray.rcount()
 }
 
 func Benchmark30Insert70Contains_SkipSet(b *testing.B) {
-	l := New()
-	var i int
-	for i < 1000 {
-		l.Insert(benchArray.Insert[i])
-		i++
-	}
+	l := newSkipSet(1000)
+	defer benchArray.rcount()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -254,16 +281,11 @@ func Benchmark30Insert70Contains_SkipSet(b *testing.B) {
 			}
 		}
 	})
-	benchArray.rcount()
 }
 
 func Benchmark30Insert70Contains_SyncMap(b *testing.B) {
-	var l sync.Map
-	var i int
-	for i < 1000 {
-		l.Store(benchArray.Insert[i], nil)
-		i++
-	}
+	l := newSyncMap(1000)
+	defer benchArray.rcount()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -275,47 +297,66 @@ func Benchmark30Insert70Contains_SyncMap(b *testing.B) {
 			}
 		}
 	})
-	benchArray.rcount()
 }
 
-func Benchmark10Insert90Contains_SkipSet(b *testing.B) {
-	l := New()
-	var i int
-	for i < 1000 {
-		l.Insert(benchArray.Insert[i])
-		i++
-	}
+func Benchmark1Delete9Insert90Contains_SkipSet(b *testing.B) {
+	l := newSkipSet(1000)
+	defer benchArray.rcount()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			u := benchArray.next()
-			if benchArray.Rnd9091[u] != 0 {
+			if benchArray.Rnd9091[u] == 1 {
 				l.Insert(benchArray.Insert[u])
+			} else if benchArray.Rnd9091[u] == 2 {
+				l.Delete(benchArray.Check[u])
 			} else {
 				l.Contains(benchArray.Check[u])
 			}
 		}
 	})
-	benchArray.rcount()
 }
 
-func Benchmark10Insert90Contains_SyncMap(b *testing.B) {
-	var l sync.Map
-	var i int
-	for i < 1000 {
-		l.Store(benchArray.Insert[i], nil)
-		i++
-	}
+func Benchmark1Delete9Insert90Contains_SyncMap(b *testing.B) {
+	l := newSyncMap(1000)
+	defer benchArray.rcount()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			u := benchArray.next()
-			if benchArray.Rnd9091[u] != 0 {
+			if benchArray.Rnd9091[u] == 1 {
 				l.Store(benchArray.Insert[u], nil)
+			} else if benchArray.Rnd9091[u] == 2 {
+				l.Delete(benchArray.Check[u])
 			} else {
-				l.Load(benchArray.Insert[u])
+				l.Load(benchArray.Check[u])
 			}
 		}
 	})
-	benchArray.rcount()
+}
+
+func BenchmarkRange_SkipSet(b *testing.B) {
+	l := newSkipSet(1000)
+	defer benchArray.rcount()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			l.Range(func(i int, score int64) bool {
+				return true
+			})
+		}
+	})
+}
+
+func BenchmarkRange_SyncMap(b *testing.B) {
+	l := newSyncMap(1000)
+	defer benchArray.rcount()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			l.Range(func(key, value interface{}) bool {
+				return true
+			})
+		}
+	})
 }

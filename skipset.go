@@ -17,7 +17,7 @@ const (
 
 var rnd = rand.New(lockedsource.New(0))
 
-type SkipList struct {
+type SkipSet struct {
 	header *Node
 	tail   *Node
 	length int64
@@ -40,12 +40,12 @@ func newNode(score int64, level int) *Node {
 	}
 }
 
-func New() *SkipList {
+func New() *SkipSet {
 	h, t := newNode(0, maxLevel), newNode(0, maxLevel)
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
-	return &SkipList{
+	return &SkipSet{
 		header: h,
 		tail:   t,
 	}
@@ -64,7 +64,7 @@ func randomLevel() int {
 
 // findNode takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *SkipList) findNode(score int64, preds *[maxLevel]*Node, succs *[maxLevel]*Node) int {
+func (s *SkipSet) findNode(score int64, preds *[maxLevel]*Node, succs *[maxLevel]*Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -86,7 +86,7 @@ func (s *SkipList) findNode(score int64, preds *[maxLevel]*Node, succs *[maxLeve
 
 // findNode takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *SkipList) findNodeSimple(score int64, preds *[maxLevel]*Node, succs *[maxLevel]*Node) int {
+func (s *SkipSet) findNodeSimple(score int64, preds *[maxLevel]*Node, succs *[maxLevel]*Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -116,7 +116,7 @@ func unlock(preds [maxLevel]*Node, highestLevel int) {
 	}
 }
 
-func (s *SkipList) Insert(score int64) bool {
+func (s *SkipSet) Insert(score int64) bool {
 	level := randomLevel()
 	var preds, succs [maxLevel]*Node
 	for {
@@ -171,7 +171,7 @@ func (s *SkipList) Insert(score int64) bool {
 	}
 }
 
-func (s *SkipList) Contains(score int64) bool {
+func (s *SkipSet) Contains(score int64) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		for x.next[i] != s.tail && x.next[i].score < score {
@@ -186,7 +186,7 @@ func (s *SkipList) Contains(score int64) bool {
 	return false
 }
 
-func (s *SkipList) Remove(score int64) bool {
+func (s *SkipSet) Delete(score int64) bool {
 	var (
 		nodeToDelete *Node
 		isMarked     bool // represents if this operation mark the node
@@ -246,7 +246,24 @@ func (s *SkipList) Remove(score int64) bool {
 	}
 }
 
-func (s *SkipList) print() {
+func (s *SkipSet) Range(f func(i int, score int64) bool) {
+	var (
+		i int
+		x = s.header.next[0]
+	)
+	for x != s.tail {
+		if x.marked || !x.fullyLinked {
+			continue
+		}
+		if !f(i, x.score) {
+			break
+		}
+		x = x.next[0]
+		i++
+	}
+}
+
+func (s *SkipSet) print() {
 	for i := maxLevel - 1; i >= 0; i-- {
 		print(i, " ")
 		x := s.header.next[i]
@@ -262,7 +279,7 @@ func (s *SkipList) print() {
 	print("\r\n")
 }
 
-func (s *SkipList) sprint() string {
+func (s *SkipSet) sprint() string {
 	data := make([]string, 10000)
 	addS := func(a ...interface{}) {
 		x := fmt.Sprint(a...)

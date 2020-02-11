@@ -2,12 +2,35 @@ package skipset
 
 import (
 	"flag"
+	"fmt"
 	"math/rand"
 	"sync"
 	"testing"
 )
 
 var tt = flag.Int("tt", 1, "test times")
+
+func Example() {
+	l := NewInt()
+
+	for _, v := range []int{10, 12, 15} {
+		if l.Insert(v) {
+			fmt.Println("skipset insert", v)
+		}
+	}
+
+	if l.Contains(10) {
+		fmt.Println("skipset contains 10")
+	}
+
+	l.Range(func(i int, score int) bool {
+		fmt.Println("skipset range found ", score)
+		return true
+	})
+
+	l.Delete(15)
+	fmt.Printf("skipset contains %d items\r\n", l.Len())
+}
 
 type benchArrayCache struct {
 	length      int
@@ -357,6 +380,78 @@ func BenchmarkRange_SyncMap(b *testing.B) {
 			l.Range(func(key, value interface{}) bool {
 				return true
 			})
+		}
+	})
+}
+
+func BenchmarkContains_SkipSet(b *testing.B) {
+	num := 100000
+	l := newSkipSet(num)
+	defer benchArray.rcount()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			l.Contains(benchArray.Insert[rand.Intn(num*2)])
+		}
+	})
+}
+
+func BenchmarkContains_SyncMap(b *testing.B) {
+	num := 100000
+	l := newSyncMap(num)
+	defer benchArray.rcount()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			l.Load(benchArray.Insert[rand.Intn(num*2)])
+		}
+	})
+}
+
+func BenchmarkDelete_100Valid_SkipSet(b *testing.B) {
+	num := 100000
+	l := newSkipSet(num)
+	defer benchArray.rcount()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			l.Delete(benchArray.Insert[benchArray.next()])
+		}
+	})
+}
+
+func BenchmarkDelete_100Valid_SyncMap(b *testing.B) {
+	num := 100000
+	l := newSyncMap(num)
+	defer benchArray.rcount()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			l.Delete(benchArray.Insert[benchArray.next()])
+		}
+	})
+}
+
+func BenchmarkDelete_50Valid_SkipSet(b *testing.B) {
+	num := 100000
+	l := newSkipSet(num)
+	defer benchArray.rcount()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			l.Delete(benchArray.Insert[rand.Intn(num*2)])
+		}
+	})
+}
+
+func BenchmarkDelete_50Valid_SyncMap(b *testing.B) {
+	num := 100000
+	l := newSyncMap(num)
+	defer benchArray.rcount()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			l.Delete(benchArray.Insert[rand.Intn(num*2)])
 		}
 	})
 }

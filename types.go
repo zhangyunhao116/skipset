@@ -42,9 +42,9 @@ func NewFloat32() *Float32Set {
 	}
 }
 
-// findNode takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
+// findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *Float32Set) findNode(score float32, preds *[maxLevel]*float32Node, succs *[maxLevel]*float32Node) int {
+func (s *Float32Set) findNodeDelete(score float32, preds *[maxLevel]*float32Node, succs *[maxLevel]*float32Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -64,9 +64,9 @@ func (s *Float32Set) findNode(score float32, preds *[maxLevel]*float32Node, succ
 	return lFound
 }
 
-// findNodeSimple takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
+// findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *Float32Set) findNodeSimple(score float32, preds *[maxLevel]*float32Node, succs *[maxLevel]*float32Node) int {
+func (s *Float32Set) findNodeInsert(score float32, preds *[maxLevel]*float32Node, succs *[maxLevel]*float32Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -104,7 +104,7 @@ func (s *Float32Set) Insert(score float32) bool {
 	level := randomLevel()
 	var preds, succs [maxLevel]*float32Node
 	for {
-		lFound := s.findNodeSimple(score, &preds, &succs)
+		lFound := s.findNodeInsert(score, &preds, &succs)
 		if lFound != -1 { // indicating the score is already in the skip-list
 			nodeFound := succs[lFound]
 			if !nodeFound.marked {
@@ -180,7 +180,7 @@ func (s *Float32Set) Delete(score float32) bool {
 		preds, succs [maxLevel]*float32Node
 	)
 	for {
-		lFound := s.findNode(score, &preds, &succs)
+		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
 			lFound != -1 && succs[lFound].fullyLinked && !succs[lFound].marked && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
@@ -292,9 +292,9 @@ func NewFloat64() *Float64Set {
 	}
 }
 
-// findNode takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
+// findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *Float64Set) findNode(score float64, preds *[maxLevel]*float64Node, succs *[maxLevel]*float64Node) int {
+func (s *Float64Set) findNodeDelete(score float64, preds *[maxLevel]*float64Node, succs *[maxLevel]*float64Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -314,9 +314,9 @@ func (s *Float64Set) findNode(score float64, preds *[maxLevel]*float64Node, succ
 	return lFound
 }
 
-// findNodeSimple takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
+// findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *Float64Set) findNodeSimple(score float64, preds *[maxLevel]*float64Node, succs *[maxLevel]*float64Node) int {
+func (s *Float64Set) findNodeInsert(score float64, preds *[maxLevel]*float64Node, succs *[maxLevel]*float64Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -354,7 +354,7 @@ func (s *Float64Set) Insert(score float64) bool {
 	level := randomLevel()
 	var preds, succs [maxLevel]*float64Node
 	for {
-		lFound := s.findNodeSimple(score, &preds, &succs)
+		lFound := s.findNodeInsert(score, &preds, &succs)
 		if lFound != -1 { // indicating the score is already in the skip-list
 			nodeFound := succs[lFound]
 			if !nodeFound.marked {
@@ -430,7 +430,7 @@ func (s *Float64Set) Delete(score float64) bool {
 		preds, succs [maxLevel]*float64Node
 	)
 	for {
-		lFound := s.findNode(score, &preds, &succs)
+		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
 			lFound != -1 && succs[lFound].fullyLinked && !succs[lFound].marked && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
@@ -542,9 +542,9 @@ func NewInt32() *Int32Set {
 	}
 }
 
-// findNode takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
+// findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *Int32Set) findNode(score int32, preds *[maxLevel]*int32Node, succs *[maxLevel]*int32Node) int {
+func (s *Int32Set) findNodeDelete(score int32, preds *[maxLevel]*int32Node, succs *[maxLevel]*int32Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -564,9 +564,9 @@ func (s *Int32Set) findNode(score int32, preds *[maxLevel]*int32Node, succs *[ma
 	return lFound
 }
 
-// findNodeSimple takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
+// findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *Int32Set) findNodeSimple(score int32, preds *[maxLevel]*int32Node, succs *[maxLevel]*int32Node) int {
+func (s *Int32Set) findNodeInsert(score int32, preds *[maxLevel]*int32Node, succs *[maxLevel]*int32Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -604,7 +604,7 @@ func (s *Int32Set) Insert(score int32) bool {
 	level := randomLevel()
 	var preds, succs [maxLevel]*int32Node
 	for {
-		lFound := s.findNodeSimple(score, &preds, &succs)
+		lFound := s.findNodeInsert(score, &preds, &succs)
 		if lFound != -1 { // indicating the score is already in the skip-list
 			nodeFound := succs[lFound]
 			if !nodeFound.marked {
@@ -680,7 +680,7 @@ func (s *Int32Set) Delete(score int32) bool {
 		preds, succs [maxLevel]*int32Node
 	)
 	for {
-		lFound := s.findNode(score, &preds, &succs)
+		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
 			lFound != -1 && succs[lFound].fullyLinked && !succs[lFound].marked && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
@@ -792,9 +792,9 @@ func NewInt() *IntSet {
 	}
 }
 
-// findNode takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
+// findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *IntSet) findNode(score int, preds *[maxLevel]*intNode, succs *[maxLevel]*intNode) int {
+func (s *IntSet) findNodeDelete(score int, preds *[maxLevel]*intNode, succs *[maxLevel]*intNode) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -814,9 +814,9 @@ func (s *IntSet) findNode(score int, preds *[maxLevel]*intNode, succs *[maxLevel
 	return lFound
 }
 
-// findNodeSimple takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
+// findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *IntSet) findNodeSimple(score int, preds *[maxLevel]*intNode, succs *[maxLevel]*intNode) int {
+func (s *IntSet) findNodeInsert(score int, preds *[maxLevel]*intNode, succs *[maxLevel]*intNode) int {
 	// lFound represents the index of the first layer at which it found a node.
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -854,7 +854,7 @@ func (s *IntSet) Insert(score int) bool {
 	level := randomLevel()
 	var preds, succs [maxLevel]*intNode
 	for {
-		lFound := s.findNodeSimple(score, &preds, &succs)
+		lFound := s.findNodeInsert(score, &preds, &succs)
 		if lFound != -1 { // indicating the score is already in the skip-list
 			nodeFound := succs[lFound]
 			if !nodeFound.marked {
@@ -930,7 +930,7 @@ func (s *IntSet) Delete(score int) bool {
 		preds, succs [maxLevel]*intNode
 	)
 	for {
-		lFound := s.findNode(score, &preds, &succs)
+		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
 			lFound != -1 && succs[lFound].fullyLinked && !succs[lFound].marked && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
@@ -1042,9 +1042,9 @@ func NewUint32() *Uint32Set {
 	}
 }
 
-// findNode takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
+// findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *Uint32Set) findNode(score uint32, preds *[maxLevel]*uint32Node, succs *[maxLevel]*uint32Node) int {
+func (s *Uint32Set) findNodeDelete(score uint32, preds *[maxLevel]*uint32Node, succs *[maxLevel]*uint32Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -1064,9 +1064,9 @@ func (s *Uint32Set) findNode(score uint32, preds *[maxLevel]*uint32Node, succs *
 	return lFound
 }
 
-// findNodeSimple takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
+// findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *Uint32Set) findNodeSimple(score uint32, preds *[maxLevel]*uint32Node, succs *[maxLevel]*uint32Node) int {
+func (s *Uint32Set) findNodeInsert(score uint32, preds *[maxLevel]*uint32Node, succs *[maxLevel]*uint32Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -1104,7 +1104,7 @@ func (s *Uint32Set) Insert(score uint32) bool {
 	level := randomLevel()
 	var preds, succs [maxLevel]*uint32Node
 	for {
-		lFound := s.findNodeSimple(score, &preds, &succs)
+		lFound := s.findNodeInsert(score, &preds, &succs)
 		if lFound != -1 { // indicating the score is already in the skip-list
 			nodeFound := succs[lFound]
 			if !nodeFound.marked {
@@ -1180,7 +1180,7 @@ func (s *Uint32Set) Delete(score uint32) bool {
 		preds, succs [maxLevel]*uint32Node
 	)
 	for {
-		lFound := s.findNode(score, &preds, &succs)
+		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
 			lFound != -1 && succs[lFound].fullyLinked && !succs[lFound].marked && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
@@ -1292,9 +1292,9 @@ func NewUint64() *Uint64Set {
 	}
 }
 
-// findNode takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
+// findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *Uint64Set) findNode(score uint64, preds *[maxLevel]*uint64Node, succs *[maxLevel]*uint64Node) int {
+func (s *Uint64Set) findNodeDelete(score uint64, preds *[maxLevel]*uint64Node, succs *[maxLevel]*uint64Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -1314,9 +1314,9 @@ func (s *Uint64Set) findNode(score uint64, preds *[maxLevel]*uint64Node, succs *
 	return lFound
 }
 
-// findNodeSimple takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
+// findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *Uint64Set) findNodeSimple(score uint64, preds *[maxLevel]*uint64Node, succs *[maxLevel]*uint64Node) int {
+func (s *Uint64Set) findNodeInsert(score uint64, preds *[maxLevel]*uint64Node, succs *[maxLevel]*uint64Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -1354,7 +1354,7 @@ func (s *Uint64Set) Insert(score uint64) bool {
 	level := randomLevel()
 	var preds, succs [maxLevel]*uint64Node
 	for {
-		lFound := s.findNodeSimple(score, &preds, &succs)
+		lFound := s.findNodeInsert(score, &preds, &succs)
 		if lFound != -1 { // indicating the score is already in the skip-list
 			nodeFound := succs[lFound]
 			if !nodeFound.marked {
@@ -1430,7 +1430,7 @@ func (s *Uint64Set) Delete(score uint64) bool {
 		preds, succs [maxLevel]*uint64Node
 	)
 	for {
-		lFound := s.findNode(score, &preds, &succs)
+		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
 			lFound != -1 && succs[lFound].fullyLinked && !succs[lFound].marked && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
@@ -1542,9 +1542,9 @@ func NewUint() *UintSet {
 	}
 }
 
-// findNode takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
+// findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *UintSet) findNode(score uint, preds *[maxLevel]*uintNode, succs *[maxLevel]*uintNode) int {
+func (s *UintSet) findNodeDelete(score uint, preds *[maxLevel]*uintNode, succs *[maxLevel]*uintNode) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -1564,9 +1564,9 @@ func (s *UintSet) findNode(score uint, preds *[maxLevel]*uintNode, succs *[maxLe
 	return lFound
 }
 
-// findNodeSimple takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
+// findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *UintSet) findNodeSimple(score uint, preds *[maxLevel]*uintNode, succs *[maxLevel]*uintNode) int {
+func (s *UintSet) findNodeInsert(score uint, preds *[maxLevel]*uintNode, succs *[maxLevel]*uintNode) int {
 	// lFound represents the index of the first layer at which it found a node.
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -1604,7 +1604,7 @@ func (s *UintSet) Insert(score uint) bool {
 	level := randomLevel()
 	var preds, succs [maxLevel]*uintNode
 	for {
-		lFound := s.findNodeSimple(score, &preds, &succs)
+		lFound := s.findNodeInsert(score, &preds, &succs)
 		if lFound != -1 { // indicating the score is already in the skip-list
 			nodeFound := succs[lFound]
 			if !nodeFound.marked {
@@ -1680,7 +1680,7 @@ func (s *UintSet) Delete(score uint) bool {
 		preds, succs [maxLevel]*uintNode
 	)
 	for {
-		lFound := s.findNode(score, &preds, &succs)
+		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
 			lFound != -1 && succs[lFound].fullyLinked && !succs[lFound].marked && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now

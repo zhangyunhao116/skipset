@@ -41,9 +41,9 @@ func NewInt64() *Int64Set {
 	}
 }
 
-// findNode takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
+// findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *Int64Set) findNode(score int64, preds *[maxLevel]*int64Node, succs *[maxLevel]*int64Node) int {
+func (s *Int64Set) findNodeDelete(score int64, preds *[maxLevel]*int64Node, succs *[maxLevel]*int64Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -63,9 +63,9 @@ func (s *Int64Set) findNode(score int64, preds *[maxLevel]*int64Node, succs *[ma
 	return lFound
 }
 
-// findNodeSimple takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
+// findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *Int64Set) findNodeSimple(score int64, preds *[maxLevel]*int64Node, succs *[maxLevel]*int64Node) int {
+func (s *Int64Set) findNodeInsert(score int64, preds *[maxLevel]*int64Node, succs *[maxLevel]*int64Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -103,7 +103,7 @@ func (s *Int64Set) Insert(score int64) bool {
 	level := randomLevel()
 	var preds, succs [maxLevel]*int64Node
 	for {
-		lFound := s.findNodeSimple(score, &preds, &succs)
+		lFound := s.findNodeInsert(score, &preds, &succs)
 		if lFound != -1 { // indicating the score is already in the skip-list
 			nodeFound := succs[lFound]
 			if !nodeFound.marked {
@@ -179,7 +179,7 @@ func (s *Int64Set) Delete(score int64) bool {
 		preds, succs [maxLevel]*int64Node
 	)
 	for {
-		lFound := s.findNode(score, &preds, &succs)
+		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
 			lFound != -1 && succs[lFound].fullyLinked && !succs[lFound].marked && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now

@@ -1,6 +1,7 @@
 package skipset
 
 import (
+	"math"
 	"math/rand"
 
 	"github.com/ZYunH/lockedsource"
@@ -8,7 +9,7 @@ import (
 
 const (
 	maxLevel = 32
-	p        = 0.25
+	p        = 1 / math.E
 )
 
 var rnd = rand.New(lockedsource.New(0))

@@ -1,1 +1,1 @@
-go test -bench=. -benchmem -benchtime=1000000x -count=20 -tt=0 > 0-0-1.txt
+go test -bench=. -benchmem -benchtime=100000x -count=20 -cpu=4,8,16 -tt=0 > 0-0-1-10,0000.txt

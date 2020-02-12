@@ -240,6 +240,7 @@ func (s *Int64Set) Range(f func(i int, score int64) bool) {
 	)
 	for x != s.tail {
 		if x.marked || !x.fullyLinked {
+			x = x.next[0]
 			continue
 		}
 		if !f(i, x.score) {

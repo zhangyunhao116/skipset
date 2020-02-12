@@ -217,15 +217,14 @@ func TestNewInt64(t *testing.T) {
 	for i := 0; i < num; i++ {
 		wg.Add(1)
 		go func() {
-			r := rand.Intn(3)
-			if r == 0 {
+			r := rand.Intn(1000)
+			if r < 333 {
 				l.Insert(benchArray.Insert[rand.Intn(num)])
-			} else if r == 1 {
+			} else if r < 666 {
 				l.Contains(benchArray.Insert[rand.Intn(num)])
-			} else {
+			} else if r != 999 {
 				l.Delete(benchArray.Insert[rand.Intn(num)])
-			}
-			if rand.Intn(100000) == 0 {
+			} else {
 				l.Range(func(i int, score int64) bool {
 					return true
 				})

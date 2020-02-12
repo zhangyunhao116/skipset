@@ -241,6 +241,7 @@ func (s *Float32Set) Range(f func(i int, score float32) bool) {
 	)
 	for x != s.tail {
 		if x.marked || !x.fullyLinked {
+			x = x.next[0]
 			continue
 		}
 		if !f(i, x.score) {
@@ -491,6 +492,7 @@ func (s *Float64Set) Range(f func(i int, score float64) bool) {
 	)
 	for x != s.tail {
 		if x.marked || !x.fullyLinked {
+			x = x.next[0]
 			continue
 		}
 		if !f(i, x.score) {
@@ -741,6 +743,7 @@ func (s *Int32Set) Range(f func(i int, score int32) bool) {
 	)
 	for x != s.tail {
 		if x.marked || !x.fullyLinked {
+			x = x.next[0]
 			continue
 		}
 		if !f(i, x.score) {
@@ -991,6 +994,7 @@ func (s *IntSet) Range(f func(i int, score int) bool) {
 	)
 	for x != s.tail {
 		if x.marked || !x.fullyLinked {
+			x = x.next[0]
 			continue
 		}
 		if !f(i, x.score) {
@@ -1241,6 +1245,7 @@ func (s *Uint32Set) Range(f func(i int, score uint32) bool) {
 	)
 	for x != s.tail {
 		if x.marked || !x.fullyLinked {
+			x = x.next[0]
 			continue
 		}
 		if !f(i, x.score) {
@@ -1491,6 +1496,7 @@ func (s *Uint64Set) Range(f func(i int, score uint64) bool) {
 	)
 	for x != s.tail {
 		if x.marked || !x.fullyLinked {
+			x = x.next[0]
 			continue
 		}
 		if !f(i, x.score) {
@@ -1741,6 +1747,7 @@ func (s *UintSet) Range(f func(i int, score uint) bool) {
 	)
 	for x != s.tail {
 		if x.marked || !x.fullyLinked {
+			x = x.next[0]
 			continue
 		}
 		if !f(i, x.score) {

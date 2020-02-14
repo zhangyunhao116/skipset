@@ -43,7 +43,7 @@ func NewFloat32() *Float32Set {
 }
 
 // findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
-// The returned preds and succs always satisfy preds[i] > score > succs[i].
+// The returned preds and succs always satisfy preds[i] > score >= succs[i].
 func (s *Float32Set) findNodeDelete(score float32, preds *[maxLevel]*float32Node, succs *[maxLevel]*float32Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
@@ -294,7 +294,7 @@ func NewFloat64() *Float64Set {
 }
 
 // findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
-// The returned preds and succs always satisfy preds[i] > score > succs[i].
+// The returned preds and succs always satisfy preds[i] > score >= succs[i].
 func (s *Float64Set) findNodeDelete(score float64, preds *[maxLevel]*float64Node, succs *[maxLevel]*float64Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
@@ -545,7 +545,7 @@ func NewInt32() *Int32Set {
 }
 
 // findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
-// The returned preds and succs always satisfy preds[i] > score > succs[i].
+// The returned preds and succs always satisfy preds[i] > score >= succs[i].
 func (s *Int32Set) findNodeDelete(score int32, preds *[maxLevel]*int32Node, succs *[maxLevel]*int32Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
@@ -796,7 +796,7 @@ func NewInt() *IntSet {
 }
 
 // findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
-// The returned preds and succs always satisfy preds[i] > score > succs[i].
+// The returned preds and succs always satisfy preds[i] > score >= succs[i].
 func (s *IntSet) findNodeDelete(score int, preds *[maxLevel]*intNode, succs *[maxLevel]*intNode) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
@@ -1047,7 +1047,7 @@ func NewUint32() *Uint32Set {
 }
 
 // findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
-// The returned preds and succs always satisfy preds[i] > score > succs[i].
+// The returned preds and succs always satisfy preds[i] > score >= succs[i].
 func (s *Uint32Set) findNodeDelete(score uint32, preds *[maxLevel]*uint32Node, succs *[maxLevel]*uint32Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
@@ -1298,7 +1298,7 @@ func NewUint64() *Uint64Set {
 }
 
 // findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
-// The returned preds and succs always satisfy preds[i] > score > succs[i].
+// The returned preds and succs always satisfy preds[i] > score >= succs[i].
 func (s *Uint64Set) findNodeDelete(score uint64, preds *[maxLevel]*uint64Node, succs *[maxLevel]*uint64Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
@@ -1549,7 +1549,7 @@ func NewUint() *UintSet {
 }
 
 // findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
-// The returned preds and succs always satisfy preds[i] > score > succs[i].
+// The returned preds and succs always satisfy preds[i] > score >= succs[i].
 func (s *UintSet) findNodeDelete(score uint, preds *[maxLevel]*uintNode, succs *[maxLevel]*uintNode) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header

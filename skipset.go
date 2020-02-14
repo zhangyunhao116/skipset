@@ -42,7 +42,7 @@ func NewInt64() *Int64Set {
 }
 
 // findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
-// The returned preds and succs always satisfy preds[i] > score > succs[i].
+// The returned preds and succs always satisfy preds[i] > score >= succs[i].
 func (s *Int64Set) findNodeDelete(score int64, preds *[maxLevel]*int64Node, succs *[maxLevel]*int64Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header

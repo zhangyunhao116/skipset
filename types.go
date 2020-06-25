@@ -26,16 +26,18 @@ func newFloat32Node(score float32, level int) *float32Node {
 		score:       score,
 		next:        make([]*float32Node, level),
 		marked:      false,
-		fullyLinked: true,
+		fullyLinked: false,
 	}
 }
 
-// NewFloat32 return a empty float32 skip set.
+// NewFloat32 return an empty float32 skip set.
 func NewFloat32() *Float32Set {
 	h, t := newFloat32Node(0, maxLevel), newFloat32Node(0, maxLevel)
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
+	h.fullyLinked = true
+	t.fullyLinked = true
 	return &Float32Set{
 		header: h,
 		tail:   t,
@@ -144,9 +146,9 @@ func (s *Float32Set) Insert(score float32) bool {
 		}
 
 		nn := newFloat32Node(score, level)
-		for i := 0; i < level; i++ {
-			nn.next[i] = succs[i]
-			preds[i].next[i] = nn
+		for layer := 0; layer < level; layer++ {
+			nn.next[layer] = succs[layer]
+			preds[layer].next[layer] = nn
 		}
 		nn.fullyLinked = true
 		unlockFloat32(preds, highestLocked)
@@ -277,16 +279,18 @@ func newFloat64Node(score float64, level int) *float64Node {
 		score:       score,
 		next:        make([]*float64Node, level),
 		marked:      false,
-		fullyLinked: true,
+		fullyLinked: false,
 	}
 }
 
-// NewFloat64 return a empty float64 skip set.
+// NewFloat64 return an empty float64 skip set.
 func NewFloat64() *Float64Set {
 	h, t := newFloat64Node(0, maxLevel), newFloat64Node(0, maxLevel)
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
+	h.fullyLinked = true
+	t.fullyLinked = true
 	return &Float64Set{
 		header: h,
 		tail:   t,
@@ -395,9 +399,9 @@ func (s *Float64Set) Insert(score float64) bool {
 		}
 
 		nn := newFloat64Node(score, level)
-		for i := 0; i < level; i++ {
-			nn.next[i] = succs[i]
-			preds[i].next[i] = nn
+		for layer := 0; layer < level; layer++ {
+			nn.next[layer] = succs[layer]
+			preds[layer].next[layer] = nn
 		}
 		nn.fullyLinked = true
 		unlockFloat64(preds, highestLocked)
@@ -528,16 +532,18 @@ func newInt32Node(score int32, level int) *int32Node {
 		score:       score,
 		next:        make([]*int32Node, level),
 		marked:      false,
-		fullyLinked: true,
+		fullyLinked: false,
 	}
 }
 
-// NewInt32 return a empty int32 skip set.
+// NewInt32 return an empty int32 skip set.
 func NewInt32() *Int32Set {
 	h, t := newInt32Node(0, maxLevel), newInt32Node(0, maxLevel)
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
+	h.fullyLinked = true
+	t.fullyLinked = true
 	return &Int32Set{
 		header: h,
 		tail:   t,
@@ -646,9 +652,9 @@ func (s *Int32Set) Insert(score int32) bool {
 		}
 
 		nn := newInt32Node(score, level)
-		for i := 0; i < level; i++ {
-			nn.next[i] = succs[i]
-			preds[i].next[i] = nn
+		for layer := 0; layer < level; layer++ {
+			nn.next[layer] = succs[layer]
+			preds[layer].next[layer] = nn
 		}
 		nn.fullyLinked = true
 		unlockInt32(preds, highestLocked)
@@ -779,16 +785,18 @@ func newIntNode(score int, level int) *intNode {
 		score:       score,
 		next:        make([]*intNode, level),
 		marked:      false,
-		fullyLinked: true,
+		fullyLinked: false,
 	}
 }
 
-// NewInt return a empty int skip set.
+// NewInt return an empty int skip set.
 func NewInt() *IntSet {
 	h, t := newIntNode(0, maxLevel), newIntNode(0, maxLevel)
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
+	h.fullyLinked = true
+	t.fullyLinked = true
 	return &IntSet{
 		header: h,
 		tail:   t,
@@ -897,9 +905,9 @@ func (s *IntSet) Insert(score int) bool {
 		}
 
 		nn := newIntNode(score, level)
-		for i := 0; i < level; i++ {
-			nn.next[i] = succs[i]
-			preds[i].next[i] = nn
+		for layer := 0; layer < level; layer++ {
+			nn.next[layer] = succs[layer]
+			preds[layer].next[layer] = nn
 		}
 		nn.fullyLinked = true
 		unlockInt(preds, highestLocked)
@@ -1030,16 +1038,18 @@ func newUint32Node(score uint32, level int) *uint32Node {
 		score:       score,
 		next:        make([]*uint32Node, level),
 		marked:      false,
-		fullyLinked: true,
+		fullyLinked: false,
 	}
 }
 
-// NewUint32 return a empty uint32 skip set.
+// NewUint32 return an empty uint32 skip set.
 func NewUint32() *Uint32Set {
 	h, t := newUint32Node(0, maxLevel), newUint32Node(0, maxLevel)
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
+	h.fullyLinked = true
+	t.fullyLinked = true
 	return &Uint32Set{
 		header: h,
 		tail:   t,
@@ -1148,9 +1158,9 @@ func (s *Uint32Set) Insert(score uint32) bool {
 		}
 
 		nn := newUint32Node(score, level)
-		for i := 0; i < level; i++ {
-			nn.next[i] = succs[i]
-			preds[i].next[i] = nn
+		for layer := 0; layer < level; layer++ {
+			nn.next[layer] = succs[layer]
+			preds[layer].next[layer] = nn
 		}
 		nn.fullyLinked = true
 		unlockUint32(preds, highestLocked)
@@ -1281,16 +1291,18 @@ func newUint64Node(score uint64, level int) *uint64Node {
 		score:       score,
 		next:        make([]*uint64Node, level),
 		marked:      false,
-		fullyLinked: true,
+		fullyLinked: false,
 	}
 }
 
-// NewUint64 return a empty uint64 skip set.
+// NewUint64 return an empty uint64 skip set.
 func NewUint64() *Uint64Set {
 	h, t := newUint64Node(0, maxLevel), newUint64Node(0, maxLevel)
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
+	h.fullyLinked = true
+	t.fullyLinked = true
 	return &Uint64Set{
 		header: h,
 		tail:   t,
@@ -1399,9 +1411,9 @@ func (s *Uint64Set) Insert(score uint64) bool {
 		}
 
 		nn := newUint64Node(score, level)
-		for i := 0; i < level; i++ {
-			nn.next[i] = succs[i]
-			preds[i].next[i] = nn
+		for layer := 0; layer < level; layer++ {
+			nn.next[layer] = succs[layer]
+			preds[layer].next[layer] = nn
 		}
 		nn.fullyLinked = true
 		unlockUint64(preds, highestLocked)
@@ -1532,16 +1544,18 @@ func newUintNode(score uint, level int) *uintNode {
 		score:       score,
 		next:        make([]*uintNode, level),
 		marked:      false,
-		fullyLinked: true,
+		fullyLinked: false,
 	}
 }
 
-// NewUint return a empty uint skip set.
+// NewUint return an empty uint skip set.
 func NewUint() *UintSet {
 	h, t := newUintNode(0, maxLevel), newUintNode(0, maxLevel)
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
+	h.fullyLinked = true
+	t.fullyLinked = true
 	return &UintSet{
 		header: h,
 		tail:   t,
@@ -1650,9 +1664,9 @@ func (s *UintSet) Insert(score uint) bool {
 		}
 
 		nn := newUintNode(score, level)
-		for i := 0; i < level; i++ {
-			nn.next[i] = succs[i]
-			preds[i].next[i] = nn
+		for layer := 0; layer < level; layer++ {
+			nn.next[layer] = succs[layer]
+			preds[layer].next[layer] = nn
 		}
 		nn.fullyLinked = true
 		unlockUint(preds, highestLocked)

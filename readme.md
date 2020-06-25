@@ -2,7 +2,7 @@
 
 ## Introduction
 
-skipset is a high-performance concurrent set based on skip list. In typical pattern(one million operations, 90%CONTAINS 9%INSERT 1%DELETE), the skipset up to 5.5x faster than the built-in sync.Map.
+skipset is a high-performance concurrent set based on skip list. In typical pattern(one million operations, 90%CONTAINS 9%INSERT 1%DELETE), the skipset up to 3x ~ 6x faster than the built-in sync.Map.
 
 The main idea behind the skipset is [A Simple Optimistic Skiplist Algorithm](<https://people.csail.mit.edu/shanir/publications/LazySkipList.pdf>).
 
@@ -47,6 +47,10 @@ fmt.Printf("skipset contains %d items\r\n", l.Len())
 
 
 ## Benchmark
+
+**The benchmark is different on different machines, run `sh bench.sh` to get your own benchmark.(change the parameters according to your machine)**
+
+**In most cases, the  skipset up to 3x ~ 6x faster than the built-in sync.Map in typical pattern(one million operations, 90%CONTAINS 9%INSERT 1%DELETE) **
 
 VERSION: go1.14 linux/amd64
 

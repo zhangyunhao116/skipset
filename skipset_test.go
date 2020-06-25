@@ -1,14 +1,11 @@
 package skipset
 
 import (
-	"flag"
 	"fmt"
 	"math/rand"
 	"sync"
 	"testing"
 )
-
-var tt = flag.Int("tt", 1, "test times")
 
 func Example() {
 	l := NewInt()
@@ -111,10 +108,12 @@ func (c *benchArrayCache) next() (n int64) {
 }
 
 func (c *benchArrayCache) rcount() {
+	c.mu.Lock()
 	c.count = 0
+	c.mu.Unlock()
 }
 
-var benchArray = newBench(1.1 * 10000000)
+var benchArray = newBench(11 * 1000 * 1000)
 
 func newSkipSet(num int) *Int64Set {
 	l := NewInt64()
@@ -147,9 +146,6 @@ func newSyncMap(num int) sync.Map {
 }
 
 func TestNewInt64(t *testing.T) {
-	if *tt == 0 {
-		t.Skip("notest")
-	}
 	// Correctness.
 	l := NewInt64()
 	if l.length != 0 {
@@ -167,7 +163,7 @@ func TestNewInt64(t *testing.T) {
 	}
 
 	// Concurrent insert.
-	num := 1000000 * *tt // one million * tt
+	num := 1000000
 	var wg sync.WaitGroup
 	for i := 0; i < num; i++ {
 		i := i
@@ -218,6 +214,9 @@ func TestNewInt64(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			r := rand.Intn(1000)
+			if r == 0 {
+				r = 1
+			}
 			if r < 333 {
 				l.Insert(benchArray.Insert[rand.Intn(num)])
 			} else if r < 666 {
@@ -226,6 +225,9 @@ func TestNewInt64(t *testing.T) {
 				l.Delete(benchArray.Insert[rand.Intn(num)])
 			} else {
 				l.Range(func(i int, score int64) bool {
+					if score == 0 { // default header and tail score
+						t.Fatal("invalid content")
+					}
 					return true
 				})
 			}
@@ -414,6 +416,9 @@ func BenchmarkDelete_100Valid_SkipSet(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
+			if benchArray.count >= int64(num) {
+				continue
+			}
 			l.Delete(benchArray.Insert[benchArray.next()])
 		}
 	})
@@ -426,6 +431,9 @@ func BenchmarkDelete_100Valid_SyncMap(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
+			if benchArray.count >= int64(num) {
+				continue
+			}
 			l.Delete(benchArray.Insert[benchArray.next()])
 		}
 	})
@@ -438,6 +446,9 @@ func BenchmarkDelete_50Valid_SkipSet(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
+			if benchArray.count >= int64(num) {
+				continue
+			}
 			l.Delete(benchArray.Insert[rand.Intn(num*2)])
 		}
 	})
@@ -450,6 +461,9 @@ func BenchmarkDelete_50Valid_SyncMap(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
+			if benchArray.count >= int64(num) {
+				continue
+			}
 			l.Delete(benchArray.Insert[rand.Intn(num*2)])
 		}
 	})

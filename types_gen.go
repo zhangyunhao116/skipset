@@ -7,23 +7,8 @@ import (
 	"go/format"
 	"io/ioutil"
 	"os"
-	"reflect"
 	"strings"
-	"unsafe"
 )
-
-func StringToBytes(s string) (b []byte) {
-	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
-	sh := *(*reflect.StringHeader)(unsafe.Pointer(&s))
-	bh.Data = sh.Data
-	bh.Len = sh.Len
-	bh.Cap = sh.Len
-	return b
-}
-
-func BytesToString(b []byte) (s string) {
-	return *(*string)(unsafe.Pointer(&b))
-}
 
 func main() {
 	f, err := os.Open("skipset.go")

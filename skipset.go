@@ -25,16 +25,18 @@ func newInt64Node(score int64, level int) *int64Node {
 		score:       score,
 		next:        make([]*int64Node, level),
 		marked:      false,
-		fullyLinked: true,
+		fullyLinked: false,
 	}
 }
 
-// NewInt64 return a empty int64 skip set.
+// NewInt64 return an empty int64 skip set.
 func NewInt64() *Int64Set {
 	h, t := newInt64Node(0, maxLevel), newInt64Node(0, maxLevel)
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
+	h.fullyLinked = true
+	t.fullyLinked = true
 	return &Int64Set{
 		header: h,
 		tail:   t,
@@ -143,9 +145,9 @@ func (s *Int64Set) Insert(score int64) bool {
 		}
 
 		nn := newInt64Node(score, level)
-		for i := 0; i < level; i++ {
-			nn.next[i] = succs[i]
-			preds[i].next[i] = nn
+		for layer := 0; layer < level; layer++ {
+			nn.next[layer] = succs[layer]
+			preds[layer].next[layer] = nn
 		}
 		nn.fullyLinked = true
 		unlockInt64(preds, highestLocked)

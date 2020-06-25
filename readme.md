@@ -50,7 +50,7 @@ fmt.Printf("skipset contains %d items\r\n", l.Len())
 
 **The benchmark is different on different machines, run `sh bench.sh` to get your own benchmark.(change the parameters according to your machine)**
 
-**In most cases, the  skipset up to 3x ~ 6x faster than the built-in sync.Map in typical pattern(one million operations, 90%CONTAINS 9%INSERT 1%DELETE) **
+**In most cases, the  skipset up to 3x ~ 6x faster than the built-in sync.Map in the typical pattern(one million operations, 90%CONTAINS 9%INSERT 1%DELETE)**
 
 VERSION: go1.14 linux/amd64
 

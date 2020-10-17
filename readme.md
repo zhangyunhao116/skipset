@@ -71,7 +71,7 @@ Insert_SyncMap-16                              595ns ± 4%
 30Insert70Contains_SyncMap-16                  569ns ± 6%
 1Delete9Insert90Contains_SkipSet-16           50.8ns ± 3%
 1Delete9Insert90Contains_SyncMap-16            503ns ± 1%
-1Range10Delete90Insert900Contains_SkipSet-16  1.71µs ±10%
-1Range10Delete90Insert900Contains_SyncMap-16  6.92µs ± 7%
+1Range9Delete90Insert900Contains_SkipSet-16   1.67µs ± 8%
+1Range9Delete90Insert900Contains_SyncMap-16   6.25µs ± 9%
 ```
 

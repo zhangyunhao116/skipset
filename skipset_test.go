@@ -297,7 +297,7 @@ func Benchmark1Delete9Insert90Contains_SyncMap(b *testing.B) {
 	})
 }
 
-func Benchmark1Range10Delete90Insert900Contains_SkipSet(b *testing.B) {
+func Benchmark1Range9Delete90Insert900Contains_SkipSet(b *testing.B) {
 	l := NewInt64()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -307,9 +307,9 @@ func Benchmark1Range10Delete90Insert900Contains_SkipSet(b *testing.B) {
 				l.Range(func(i int, score int64) bool {
 					return true
 				})
-			} else if u >= 10 && u < 20 {
+			} else if u > 10 && u < 20 {
 				l.Delete(int64(fastrandn(randN)))
-			} else if u >= 100 && u < 200 {
+			} else if u >= 100 && u < 190 {
 				l.Insert(int64(fastrandn(randN)))
 			} else {
 				l.Contains(int64(fastrandn(randN)))
@@ -318,7 +318,7 @@ func Benchmark1Range10Delete90Insert900Contains_SkipSet(b *testing.B) {
 	})
 }
 
-func Benchmark1Range10Delete90Insert900Contains_SyncMap(b *testing.B) {
+func Benchmark1Range9Delete90Insert900Contains_SyncMap(b *testing.B) {
 	var l sync.Map
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -328,9 +328,9 @@ func Benchmark1Range10Delete90Insert900Contains_SyncMap(b *testing.B) {
 				l.Range(func(key, value interface{}) bool {
 					return true
 				})
-			} else if u >= 10 && u < 20 {
+			} else if u > 10 && u < 20 {
 				l.Delete(fastrandn(randN))
-			} else if u >= 100 && u < 200 {
+			} else if u >= 100 && u < 190 {
 				l.Store(fastrandn(randN), nil)
 			} else {
 				l.Load(fastrandn(randN))

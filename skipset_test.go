@@ -224,7 +224,7 @@ func Benchmark50Insert50Contains_SyncMap(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			u := fastrandn(2)
-			if u == 1 {
+			if u == 0 {
 				l.Store(fastrandn(randN), nil)
 			} else {
 				l.Load(fastrandn(randN))

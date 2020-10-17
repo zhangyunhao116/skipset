@@ -51,6 +51,43 @@ func TestNewInt64(t *testing.T) {
 		t.Fatal("invalid delete")
 	}
 
+	if !l.Insert(20) || l.length != 1 {
+		t.Fatal("invalid insert")
+	}
+	if !l.Insert(22) || l.length != 2 {
+		t.Fatal("invalid insert")
+	}
+	if !l.Insert(21) || l.length != 3 {
+		t.Fatal("invalid insert")
+	}
+
+	l.Range(func(i int, score int64) bool {
+		if i == 0 && score != 20 {
+			t.Fatal("invalid range")
+		}
+		if i == 1 && score != 21 {
+			t.Fatal("invalid range")
+		}
+		if i == 2 && score != 22 {
+			t.Fatal("invalid range")
+		}
+		return true
+	})
+
+	if !l.Delete(21) || l.length != 2 {
+		t.Fatal("invalid delete")
+	}
+
+	l.Range(func(i int, score int64) bool {
+		if i == 0 && score != 20 {
+			t.Fatal("invalid range")
+		}
+		if i == 1 && score != 22 {
+			t.Fatal("invalid range")
+		}
+		return true
+	})
+
 	const num = math.MaxInt16
 	// Make rand shuffle array.
 	// The tastArray contains [1,num]

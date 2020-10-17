@@ -1,7 +1,7 @@
 package skipset
 
 import (
-	_ "unsafe"
+	_ "unsafe" // for runtime.fastrand
 )
 
 const (
@@ -9,14 +9,14 @@ const (
 	p        = 0.25
 )
 
-//go:linkname runtime_fastrand runtime.fastrand
-func runtime_fastrand() uint32
+//go:linkname fastrand runtime.fastrand
+func fastrand() uint32
 
 //go:nosplit
 func fastrandn(n uint32) uint32 {
 	// This is similar to fastrand() % n, but faster.
 	// See https://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/
-	return uint32(uint64(runtime_fastrand()) * uint64(n) >> 32)
+	return uint32(uint64(fastrand()) * uint64(n) >> 32)
 }
 
 func randomLevel() int {

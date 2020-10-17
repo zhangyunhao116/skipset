@@ -1,5 +1,6 @@
 *.txt
 *.prof
 *.test
+*.out
 .idea/
 .DS_Store

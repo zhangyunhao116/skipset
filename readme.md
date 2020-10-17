@@ -54,7 +54,7 @@ CPU: AMD 3700x(8C16T), running at 3.6GHz
 
 OS: ubuntu 18.04
 
-MEMORY: 32GB
+MEMORY: 32GB
 
 ```shell
 $ go test -run=NOTEST -bench=. -count=20 -timeout=60m > x.txt

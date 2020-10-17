@@ -2,7 +2,7 @@
 
 ## Introduction
 
-skipset is a high-performance concurrent set based on skip list. In typical pattern(one million operations, 90%CONTAINS 9%INSERT 1%DELETE), the skipset up to 3x ~ 6x faster than the built-in sync.Map.
+skipset is a high-performance concurrent set based on skip list. In typical pattern(one million operations, 90%CONTAINS 9%INSERT 1%DELETE), the skipset up to 10x faster than the built-in sync.Map.
 
 The main idea behind the skipset is [A Simple Optimistic Skiplist Algorithm](<https://people.csail.mit.edu/shanir/publications/LazySkipList.pdf>).
 
@@ -48,34 +48,30 @@ fmt.Printf("skipset contains %d items\r\n", l.Len())
 
 ## Benchmark
 
-**The benchmark is different on different machines, run `sh bench.sh` to get your own benchmark.(change the parameters according to your machine)**
+Go version: go1.15 linux/amd64
 
-**In most cases, the  skipset up to 3x ~ 6x faster than the built-in sync.Map in the typical pattern(one million operations, 90%CONTAINS 9%INSERT 1%DELETE)**
-
-VERSION: go1.14 linux/amd64
-
-CPU: 8 core CPU (Intel 9700k).
+CPU: AMD 3700x(8C16T), running at 3.6GHz
 
 OS: ubuntu 18.04
 
-MEMORY: 32GB
+MEMORY: 32GB
 
-Create 8 goroutines to execute these operations.
+```shell
+$ go test -run=NOTEST -bench=. -count=20 -timeout=60m > x.txt
+$ benchstat x.txt
+```
 
-##### 1,00,000 operations
+```
+name                                          time/op
+Insert_SkipSet-16                              137ns ± 6%
+Insert_SyncMap-16                              595ns ± 4%
+50Insert50Contains_SkipSet-16                  123ns ± 2%
+50Insert50Contains_SyncMap-16                  591ns ± 8%
+30Insert70Contains_SkipSet-16                  114ns ± 2%
+30Insert70Contains_SyncMap-16                  569ns ± 6%
+1Delete9Insert90Contains_SkipSet-16           50.8ns ± 3%
+1Delete9Insert90Contains_SyncMap-16            503ns ± 1%
+1Range10Delete90Insert900Contains_SkipSet-16  1.71µs ±10%
+1Range10Delete90Insert900Contains_SyncMap-16  6.92µs ± 7%
+```
 
-- **90%CONTAINS 9%INSERT 1%DELETE**: 5.7x faster than sync.Map.
-- **30% INSERT 70%CONTAINS**: 5.8x faster than sync.Map.
-- **100% INSERT**: 3.7x faster than sync.Map, reduce memory consumption by about 50%.
-- **100% RANGE(with 1,000 items)**: 2.5x faster than sync.Map. 
-- **100% CONTAINS**: equal to sync.Map.
-- **100% DELETE**: equal to sync.Map.
-
-##### 1,000,000 operations
-
-- **90%CONTAINS 9%INSERT 1%DELETE**: 5.5x faster than sync.Map.
-- **30% INSERT 70%CONTAINS**: 3x faster than sync.Map.
-- **100% INSERT**: 4.4x faster than sync.Map, reduce memory consumption by about 50%.
-- **100% RANGE(with 1,000 items)**: 2.5x faster than sync.Map. 
-- **100% CONTAINS**: equal to sync.Map.
-- **100% DELETE**: equal to sync.Map.

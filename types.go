@@ -295,8 +295,10 @@ func (s *Float32Set) Range(f func(i int, score float32) bool) {
 }
 
 // Len return the length of this skip set.
+// Keep in sync with types_gen.go:lengthFunction
+// Special case for code generation, Must in the tail of skipset.go.
 func (s *Float32Set) Len() int {
-	return int(s.length)
+	return int(atomic.LoadInt64(&s.length))
 }
 
 // Float64Set represents a set based on skip list in ascending order.
@@ -587,15 +589,17 @@ func (s *Float64Set) Range(f func(i int, score float64) bool) {
 }
 
 // Len return the length of this skip set.
+// Keep in sync with types_gen.go:lengthFunction
+// Special case for code generation, Must in the tail of skipset.go.
 func (s *Float64Set) Len() int {
-	return int(s.length)
+	return int(atomic.LoadInt64(&s.length))
 }
 
 // Int32Set represents a set based on skip list in ascending order.
 type Int32Set struct {
 	header *int32Node
 	tail   *int32Node
-	length int32
+	length int64
 }
 
 type int32Node struct {
@@ -771,7 +775,7 @@ func (s *Int32Set) Insert(score int32) bool {
 		}
 		nn.setFullyLinked(true)
 		unlockInt32(preds, highestLocked)
-		atomic.AddInt32(&s.length, 1)
+		atomic.AddInt64(&s.length, 1)
 		return true
 	}
 }
@@ -851,7 +855,7 @@ func (s *Int32Set) Delete(score int32) bool {
 			}
 			nodeToDelete.mu.Unlock()
 			unlockInt32(preds, highestLocked)
-			atomic.AddInt32(&s.length, -1)
+			atomic.AddInt64(&s.length, -1)
 			return true
 		}
 		return false
@@ -879,8 +883,10 @@ func (s *Int32Set) Range(f func(i int, score int32) bool) {
 }
 
 // Len return the length of this skip set.
+// Keep in sync with types_gen.go:lengthFunction
+// Special case for code generation, Must in the tail of skipset.go.
 func (s *Int32Set) Len() int {
-	return int(s.length)
+	return int(atomic.LoadInt64(&s.length))
 }
 
 // IntSet represents a set based on skip list in ascending order.
@@ -1171,8 +1177,10 @@ func (s *IntSet) Range(f func(i int, score int) bool) {
 }
 
 // Len return the length of this skip set.
+// Keep in sync with types_gen.go:lengthFunction
+// Special case for code generation, Must in the tail of skipset.go.
 func (s *IntSet) Len() int {
-	return int(s.length)
+	return int(atomic.LoadInt64(&s.length))
 }
 
 // Uint32Set represents a set based on skip list in ascending order.
@@ -1463,8 +1471,10 @@ func (s *Uint32Set) Range(f func(i int, score uint32) bool) {
 }
 
 // Len return the length of this skip set.
+// Keep in sync with types_gen.go:lengthFunction
+// Special case for code generation, Must in the tail of skipset.go.
 func (s *Uint32Set) Len() int {
-	return int(s.length)
+	return int(atomic.LoadInt64(&s.length))
 }
 
 // Uint64Set represents a set based on skip list in ascending order.
@@ -1755,8 +1765,10 @@ func (s *Uint64Set) Range(f func(i int, score uint64) bool) {
 }
 
 // Len return the length of this skip set.
+// Keep in sync with types_gen.go:lengthFunction
+// Special case for code generation, Must in the tail of skipset.go.
 func (s *Uint64Set) Len() int {
-	return int(s.length)
+	return int(atomic.LoadInt64(&s.length))
 }
 
 // UintSet represents a set based on skip list in ascending order.
@@ -2047,6 +2059,8 @@ func (s *UintSet) Range(f func(i int, score uint) bool) {
 }
 
 // Len return the length of this skip set.
+// Keep in sync with types_gen.go:lengthFunction
+// Special case for code generation, Must in the tail of skipset.go.
 func (s *UintSet) Len() int {
-	return int(s.length)
+	return int(atomic.LoadInt64(&s.length))
 }

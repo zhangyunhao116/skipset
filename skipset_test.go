@@ -90,7 +90,7 @@ func TestNewInt64(t *testing.T) {
 
 	const num = math.MaxInt16
 	// Make rand shuffle array.
-	// The tastArray contains [1,num]
+	// The testArray contains [1,num]
 	testArray := make([]int64, num)
 	testArray[0] = num + 1
 	for i := 1; i < num; i++ {
@@ -130,7 +130,7 @@ func TestNewInt64(t *testing.T) {
 		go func() {
 			if !l.Contains(testArray[i]) {
 				wg.Done()
-				t.Fatalf("insert dosen't contains %d", i)
+				panic(fmt.Sprintf("insert doesn't contains %d", i))
 			}
 			wg.Done()
 		}()
@@ -144,7 +144,7 @@ func TestNewInt64(t *testing.T) {
 		go func() {
 			if !l.Delete(testArray[i]) {
 				wg.Done()
-				t.Fatalf("can't delete %d", i)
+				panic(fmt.Sprintf("can't delete %d", i))
 			}
 			wg.Done()
 		}()
@@ -172,7 +172,7 @@ func TestNewInt64(t *testing.T) {
 			} else {
 				l.Range(func(i int, score int64) bool {
 					if score == 0 { // default header and tail score
-						t.Fatal("invalid content")
+						panic("invalid content")
 					}
 					return true
 				})

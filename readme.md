@@ -73,5 +73,16 @@ Insert_SyncMap-16                              595ns ± 4%
 1Delete9Insert90Contains_SyncMap-16            503ns ± 1%
 1Range9Delete90Insert900Contains_SkipSet-16   1.67µs ± 8%
 1Range9Delete90Insert900Contains_SyncMap-16   6.25µs ± 9%
-```
 
+name                                         alloc/op
+Insert_SkipSet-16                             7.00B ± 0%
+Insert_SyncMap-16                             91.5B ± 2%
+50Insert50Contains_SkipSet-16                 5.75B ±13%
+50Insert50Contains_SyncMap-16                 59.9B ±15%
+30Insert70Contains_SkipSet-16                 4.00B ± 0%
+30Insert70Contains_SyncMap-16                 63.1B ±16%
+1Delete9Insert90Contains_SkipSet-16           0.00B     
+1Delete9Insert90Contains_SyncMap-16           46.0B ± 0%
+1Range9Delete90Insert900Contains_SkipSet-16   3.00B ± 0%
+1Range9Delete90Insert900Contains_SyncMap-16  2.11kB ± 7%
+```

@@ -1,15 +1,13 @@
 package skipset
 
 import (
-	"math"
-	"sync"
 	"testing"
 )
 
 func TestFlag(t *testing.T) {
 	// Correctness.
 	const (
-		f0 = iota
+		f0 = 1 << iota
 		f1
 		f2
 		f3
@@ -20,62 +18,18 @@ func TestFlag(t *testing.T) {
 	)
 	x := &bitflag{}
 
-	// false -> true
-	x.Set(f2, true)
-	if !x.Get(f2) || x.data != 1<<f2 {
-		t.Fatalf("invalid")
-	}
-
-	// true -> true
-	x.Set(f2, true)
-	if !x.Get(f2) || x.data != 1<<f2 {
-		t.Fatalf("invalid")
-	}
-
-	// true -> false
-	x.Set(f2, false)
-	if x.Get(f2) || x.data != 0 {
-		t.Fatalf("invalid")
-	}
-
-	// false -> false
-	x.Set(f2, false)
-	if x.Get(f2) || x.data != 0 {
-		t.Fatalf("invalid")
-	}
-
-	// Concurrent set.
-	var wg sync.WaitGroup
-	for i := 0; i < 32; i++ {
-		wg.Add(1)
-		i := i
-		go func() {
-			x.Set(i, true)
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-	if x.data != math.MaxUint32 {
+	x.SetTrue(f0 | f1 | f2)
+	if !x.Get(f0) || !x.Get(f1) || !x.Get(f2) || !x.MGet(f0|f1|f2, f0|f1|f2) {
 		t.Fatal("invalid")
 	}
 
-	for i := 0; i < 32; i++ {
-		if !x.Get(i) {
-			t.Fatal("invalid")
-		}
+	x.SetFalse(f1 | f2)
+	if !x.Get(f0) || x.Get(f1) || x.Get(f2) || !x.MGet(f0|f1|f2, f0) {
+		t.Fatal("invalid")
 	}
 
-	for i := 0; i < 32; i++ {
-		wg.Add(1)
-		i := i
-		go func() {
-			x.Set(i, false)
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-
-	if x.data != 0 {
+	x.SetTrue(f3 | f4)
+	if !x.Get(f0) || x.Get(f1) || x.Get(f2) || !x.Get(f3) || !x.Get(f4) || !x.MGet(f0|f1|f2|f3|f4, f0|f3|f4) {
 		t.Fatal("invalid")
 	}
 }

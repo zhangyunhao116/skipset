@@ -44,8 +44,8 @@ func NewFloat32() *Float32Set {
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
-	h.flags.Set(fullyLinked, true)
-	t.flags.Set(fullyLinked, true)
+	h.flags.SetTrue(fullyLinked)
+	t.flags.SetTrue(fullyLinked)
 	return &Float32Set{
 		header: h,
 		tail:   t,
@@ -158,7 +158,7 @@ func (s *Float32Set) Insert(score float32) bool {
 			nn.next[layer] = succs[layer]
 			preds[layer].storeNext(layer, nn)
 		}
-		nn.flags.Set(fullyLinked, true)
+		nn.flags.SetTrue(fullyLinked)
 		unlockFloat32(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
@@ -178,7 +178,7 @@ func (s *Float32Set) Contains(score float32) bool {
 		// Check if the score already in the skip list.
 		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
-			return nex.flags.Get(fullyLinked) && !nex.flags.Get(marked)
+			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
 	return false
@@ -195,7 +195,7 @@ func (s *Float32Set) Delete(score float32) bool {
 	for {
 		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
-			lFound != -1 && succs[lFound].flags.Get(fullyLinked) && !succs[lFound].flags.Get(marked) && (len(succs[lFound].next)-1) == lFound {
+			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
 				nodeToDelete = succs[lFound]
 				topLayer = lFound
@@ -206,7 +206,7 @@ func (s *Float32Set) Delete(score float32) bool {
 					nodeToDelete.mu.Unlock()
 					return false
 				}
-				nodeToDelete.flags.Set(marked, true)
+				nodeToDelete.flags.SetTrue(marked)
 				isMarked = true
 			}
 			// Accomplish the physical deletion.
@@ -255,7 +255,7 @@ func (s *Float32Set) Range(f func(i int, score float32) bool) {
 		x = s.header.loadNext(0)
 	)
 	for x != s.tail {
-		if x.flags.Get(marked) || !x.flags.Get(fullyLinked) {
+		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
@@ -311,8 +311,8 @@ func NewFloat64() *Float64Set {
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
-	h.flags.Set(fullyLinked, true)
-	t.flags.Set(fullyLinked, true)
+	h.flags.SetTrue(fullyLinked)
+	t.flags.SetTrue(fullyLinked)
 	return &Float64Set{
 		header: h,
 		tail:   t,
@@ -425,7 +425,7 @@ func (s *Float64Set) Insert(score float64) bool {
 			nn.next[layer] = succs[layer]
 			preds[layer].storeNext(layer, nn)
 		}
-		nn.flags.Set(fullyLinked, true)
+		nn.flags.SetTrue(fullyLinked)
 		unlockFloat64(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
@@ -445,7 +445,7 @@ func (s *Float64Set) Contains(score float64) bool {
 		// Check if the score already in the skip list.
 		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
-			return nex.flags.Get(fullyLinked) && !nex.flags.Get(marked)
+			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
 	return false
@@ -462,7 +462,7 @@ func (s *Float64Set) Delete(score float64) bool {
 	for {
 		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
-			lFound != -1 && succs[lFound].flags.Get(fullyLinked) && !succs[lFound].flags.Get(marked) && (len(succs[lFound].next)-1) == lFound {
+			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
 				nodeToDelete = succs[lFound]
 				topLayer = lFound
@@ -473,7 +473,7 @@ func (s *Float64Set) Delete(score float64) bool {
 					nodeToDelete.mu.Unlock()
 					return false
 				}
-				nodeToDelete.flags.Set(marked, true)
+				nodeToDelete.flags.SetTrue(marked)
 				isMarked = true
 			}
 			// Accomplish the physical deletion.
@@ -522,7 +522,7 @@ func (s *Float64Set) Range(f func(i int, score float64) bool) {
 		x = s.header.loadNext(0)
 	)
 	for x != s.tail {
-		if x.flags.Get(marked) || !x.flags.Get(fullyLinked) {
+		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
@@ -578,8 +578,8 @@ func NewInt32() *Int32Set {
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
-	h.flags.Set(fullyLinked, true)
-	t.flags.Set(fullyLinked, true)
+	h.flags.SetTrue(fullyLinked)
+	t.flags.SetTrue(fullyLinked)
 	return &Int32Set{
 		header: h,
 		tail:   t,
@@ -692,7 +692,7 @@ func (s *Int32Set) Insert(score int32) bool {
 			nn.next[layer] = succs[layer]
 			preds[layer].storeNext(layer, nn)
 		}
-		nn.flags.Set(fullyLinked, true)
+		nn.flags.SetTrue(fullyLinked)
 		unlockInt32(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
@@ -712,7 +712,7 @@ func (s *Int32Set) Contains(score int32) bool {
 		// Check if the score already in the skip list.
 		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
-			return nex.flags.Get(fullyLinked) && !nex.flags.Get(marked)
+			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
 	return false
@@ -729,7 +729,7 @@ func (s *Int32Set) Delete(score int32) bool {
 	for {
 		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
-			lFound != -1 && succs[lFound].flags.Get(fullyLinked) && !succs[lFound].flags.Get(marked) && (len(succs[lFound].next)-1) == lFound {
+			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
 				nodeToDelete = succs[lFound]
 				topLayer = lFound
@@ -740,7 +740,7 @@ func (s *Int32Set) Delete(score int32) bool {
 					nodeToDelete.mu.Unlock()
 					return false
 				}
-				nodeToDelete.flags.Set(marked, true)
+				nodeToDelete.flags.SetTrue(marked)
 				isMarked = true
 			}
 			// Accomplish the physical deletion.
@@ -789,7 +789,7 @@ func (s *Int32Set) Range(f func(i int, score int32) bool) {
 		x = s.header.loadNext(0)
 	)
 	for x != s.tail {
-		if x.flags.Get(marked) || !x.flags.Get(fullyLinked) {
+		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
@@ -845,8 +845,8 @@ func NewInt() *IntSet {
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
-	h.flags.Set(fullyLinked, true)
-	t.flags.Set(fullyLinked, true)
+	h.flags.SetTrue(fullyLinked)
+	t.flags.SetTrue(fullyLinked)
 	return &IntSet{
 		header: h,
 		tail:   t,
@@ -959,7 +959,7 @@ func (s *IntSet) Insert(score int) bool {
 			nn.next[layer] = succs[layer]
 			preds[layer].storeNext(layer, nn)
 		}
-		nn.flags.Set(fullyLinked, true)
+		nn.flags.SetTrue(fullyLinked)
 		unlockInt(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
@@ -979,7 +979,7 @@ func (s *IntSet) Contains(score int) bool {
 		// Check if the score already in the skip list.
 		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
-			return nex.flags.Get(fullyLinked) && !nex.flags.Get(marked)
+			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
 	return false
@@ -996,7 +996,7 @@ func (s *IntSet) Delete(score int) bool {
 	for {
 		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
-			lFound != -1 && succs[lFound].flags.Get(fullyLinked) && !succs[lFound].flags.Get(marked) && (len(succs[lFound].next)-1) == lFound {
+			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
 				nodeToDelete = succs[lFound]
 				topLayer = lFound
@@ -1007,7 +1007,7 @@ func (s *IntSet) Delete(score int) bool {
 					nodeToDelete.mu.Unlock()
 					return false
 				}
-				nodeToDelete.flags.Set(marked, true)
+				nodeToDelete.flags.SetTrue(marked)
 				isMarked = true
 			}
 			// Accomplish the physical deletion.
@@ -1056,7 +1056,7 @@ func (s *IntSet) Range(f func(i int, score int) bool) {
 		x = s.header.loadNext(0)
 	)
 	for x != s.tail {
-		if x.flags.Get(marked) || !x.flags.Get(fullyLinked) {
+		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
@@ -1112,8 +1112,8 @@ func NewUint32() *Uint32Set {
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
-	h.flags.Set(fullyLinked, true)
-	t.flags.Set(fullyLinked, true)
+	h.flags.SetTrue(fullyLinked)
+	t.flags.SetTrue(fullyLinked)
 	return &Uint32Set{
 		header: h,
 		tail:   t,
@@ -1226,7 +1226,7 @@ func (s *Uint32Set) Insert(score uint32) bool {
 			nn.next[layer] = succs[layer]
 			preds[layer].storeNext(layer, nn)
 		}
-		nn.flags.Set(fullyLinked, true)
+		nn.flags.SetTrue(fullyLinked)
 		unlockUint32(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
@@ -1246,7 +1246,7 @@ func (s *Uint32Set) Contains(score uint32) bool {
 		// Check if the score already in the skip list.
 		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
-			return nex.flags.Get(fullyLinked) && !nex.flags.Get(marked)
+			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
 	return false
@@ -1263,7 +1263,7 @@ func (s *Uint32Set) Delete(score uint32) bool {
 	for {
 		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
-			lFound != -1 && succs[lFound].flags.Get(fullyLinked) && !succs[lFound].flags.Get(marked) && (len(succs[lFound].next)-1) == lFound {
+			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
 				nodeToDelete = succs[lFound]
 				topLayer = lFound
@@ -1274,7 +1274,7 @@ func (s *Uint32Set) Delete(score uint32) bool {
 					nodeToDelete.mu.Unlock()
 					return false
 				}
-				nodeToDelete.flags.Set(marked, true)
+				nodeToDelete.flags.SetTrue(marked)
 				isMarked = true
 			}
 			// Accomplish the physical deletion.
@@ -1323,7 +1323,7 @@ func (s *Uint32Set) Range(f func(i int, score uint32) bool) {
 		x = s.header.loadNext(0)
 	)
 	for x != s.tail {
-		if x.flags.Get(marked) || !x.flags.Get(fullyLinked) {
+		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
@@ -1379,8 +1379,8 @@ func NewUint64() *Uint64Set {
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
-	h.flags.Set(fullyLinked, true)
-	t.flags.Set(fullyLinked, true)
+	h.flags.SetTrue(fullyLinked)
+	t.flags.SetTrue(fullyLinked)
 	return &Uint64Set{
 		header: h,
 		tail:   t,
@@ -1493,7 +1493,7 @@ func (s *Uint64Set) Insert(score uint64) bool {
 			nn.next[layer] = succs[layer]
 			preds[layer].storeNext(layer, nn)
 		}
-		nn.flags.Set(fullyLinked, true)
+		nn.flags.SetTrue(fullyLinked)
 		unlockUint64(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
@@ -1513,7 +1513,7 @@ func (s *Uint64Set) Contains(score uint64) bool {
 		// Check if the score already in the skip list.
 		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
-			return nex.flags.Get(fullyLinked) && !nex.flags.Get(marked)
+			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
 	return false
@@ -1530,7 +1530,7 @@ func (s *Uint64Set) Delete(score uint64) bool {
 	for {
 		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
-			lFound != -1 && succs[lFound].flags.Get(fullyLinked) && !succs[lFound].flags.Get(marked) && (len(succs[lFound].next)-1) == lFound {
+			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
 				nodeToDelete = succs[lFound]
 				topLayer = lFound
@@ -1541,7 +1541,7 @@ func (s *Uint64Set) Delete(score uint64) bool {
 					nodeToDelete.mu.Unlock()
 					return false
 				}
-				nodeToDelete.flags.Set(marked, true)
+				nodeToDelete.flags.SetTrue(marked)
 				isMarked = true
 			}
 			// Accomplish the physical deletion.
@@ -1590,7 +1590,7 @@ func (s *Uint64Set) Range(f func(i int, score uint64) bool) {
 		x = s.header.loadNext(0)
 	)
 	for x != s.tail {
-		if x.flags.Get(marked) || !x.flags.Get(fullyLinked) {
+		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
@@ -1646,8 +1646,8 @@ func NewUint() *UintSet {
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
-	h.flags.Set(fullyLinked, true)
-	t.flags.Set(fullyLinked, true)
+	h.flags.SetTrue(fullyLinked)
+	t.flags.SetTrue(fullyLinked)
 	return &UintSet{
 		header: h,
 		tail:   t,
@@ -1760,7 +1760,7 @@ func (s *UintSet) Insert(score uint) bool {
 			nn.next[layer] = succs[layer]
 			preds[layer].storeNext(layer, nn)
 		}
-		nn.flags.Set(fullyLinked, true)
+		nn.flags.SetTrue(fullyLinked)
 		unlockUint(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
@@ -1780,7 +1780,7 @@ func (s *UintSet) Contains(score uint) bool {
 		// Check if the score already in the skip list.
 		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
-			return nex.flags.Get(fullyLinked) && !nex.flags.Get(marked)
+			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
 	return false
@@ -1797,7 +1797,7 @@ func (s *UintSet) Delete(score uint) bool {
 	for {
 		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
-			lFound != -1 && succs[lFound].flags.Get(fullyLinked) && !succs[lFound].flags.Get(marked) && (len(succs[lFound].next)-1) == lFound {
+			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
 				nodeToDelete = succs[lFound]
 				topLayer = lFound
@@ -1808,7 +1808,7 @@ func (s *UintSet) Delete(score uint) bool {
 					nodeToDelete.mu.Unlock()
 					return false
 				}
-				nodeToDelete.flags.Set(marked, true)
+				nodeToDelete.flags.SetTrue(marked)
 				isMarked = true
 			}
 			// Accomplish the physical deletion.
@@ -1857,7 +1857,7 @@ func (s *UintSet) Range(f func(i int, score uint) bool) {
 		x = s.header.loadNext(0)
 	)
 	for x != s.tail {
-		if x.flags.Get(marked) || !x.flags.Get(fullyLinked) {
+		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}

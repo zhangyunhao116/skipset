@@ -46,8 +46,8 @@ func NewInt64() *Int64Set {
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
-	h.flags.Set(fullyLinked, true)
-	t.flags.Set(fullyLinked, true)
+	h.flags.SetTrue(fullyLinked)
+	t.flags.SetTrue(fullyLinked)
 	return &Int64Set{
 		header: h,
 		tail:   t,
@@ -160,7 +160,7 @@ func (s *Int64Set) Insert(score int64) bool {
 			nn.next[layer] = succs[layer]
 			preds[layer].storeNext(layer, nn)
 		}
-		nn.flags.Set(fullyLinked, true)
+		nn.flags.SetTrue(fullyLinked)
 		unlockInt64(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
@@ -180,7 +180,7 @@ func (s *Int64Set) Contains(score int64) bool {
 		// Check if the score already in the skip list.
 		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
-			return nex.flags.Get(fullyLinked) && !nex.flags.Get(marked)
+			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
 	return false
@@ -197,7 +197,7 @@ func (s *Int64Set) Delete(score int64) bool {
 	for {
 		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
-			lFound != -1 && succs[lFound].flags.Get(fullyLinked) && !succs[lFound].flags.Get(marked) && (len(succs[lFound].next)-1) == lFound {
+			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
 				nodeToDelete = succs[lFound]
 				topLayer = lFound
@@ -208,7 +208,7 @@ func (s *Int64Set) Delete(score int64) bool {
 					nodeToDelete.mu.Unlock()
 					return false
 				}
-				nodeToDelete.flags.Set(marked, true)
+				nodeToDelete.flags.SetTrue(marked)
 				isMarked = true
 			}
 			// Accomplish the physical deletion.
@@ -257,7 +257,7 @@ func (s *Int64Set) Range(f func(i int, score int64) bool) {
 		x = s.header.loadNext(0)
 	)
 	for x != s.tail {
-		if x.flags.Get(marked) || !x.flags.Get(fullyLinked) {
+		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}

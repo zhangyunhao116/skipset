@@ -18,18 +18,22 @@ func TestFlag(t *testing.T) {
 	)
 	x := &bitflag{}
 
-	x.SetTrue(f0 | f1 | f2)
-	if !x.Get(f0) || !x.Get(f1) || !x.Get(f2) || !x.MGet(f0|f1|f2, f0|f1|f2) {
+	x.SetTrue(f1 | f3)
+	if x.Get(f0) || !x.Get(f1) || x.Get(f2) || !x.Get(f3) || !x.MGet(f0|f1|f2|f3, f1|f3) {
+		t.Fatal("invalid")
+	}
+	x.SetTrue(f1)
+	x.SetTrue(f1 | f3)
+	if x.data != f1+f3 {
 		t.Fatal("invalid")
 	}
 
 	x.SetFalse(f1 | f2)
-	if !x.Get(f0) || x.Get(f1) || x.Get(f2) || !x.MGet(f0|f1|f2, f0) {
+	if x.Get(f0) || x.Get(f1) || x.Get(f2) || !x.Get(f3) || !x.MGet(f0|f1|f2|f3, f3) {
 		t.Fatal("invalid")
 	}
-
-	x.SetTrue(f3 | f4)
-	if !x.Get(f0) || x.Get(f1) || x.Get(f2) || !x.Get(f3) || !x.Get(f4) || !x.MGet(f0|f1|f2|f3|f4, f0|f3|f4) {
+	x.SetFalse(f1 | f2)
+	if x.data != f3 {
 		t.Fatal("invalid")
 	}
 }

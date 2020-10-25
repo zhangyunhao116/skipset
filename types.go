@@ -15,19 +15,16 @@ type Float32Set struct {
 }
 
 type float32Node struct {
-	score               float32
-	next                []*float32Node
-	markedInternal      uint32
-	fullyLinkedInternal uint32
-	mu                  sync.Mutex
+	score float32
+	next  []*float32Node
+	mu    sync.Mutex
+	flags bitflag
 }
 
 func newFloat32Node(score float32, level int) *float32Node {
 	return &float32Node{
-		score:               score,
-		next:                make([]*float32Node, level),
-		markedInternal:      0,
-		fullyLinkedInternal: 0,
+		score: score,
+		next:  make([]*float32Node, level),
 	}
 }
 
@@ -41,38 +38,14 @@ func (n *float32Node) storeNext(i int, val *float32Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
 }
 
-func (n *float32Node) setFullyLinked(val bool) {
-	if val {
-		atomic.StoreUint32(&n.fullyLinkedInternal, 1)
-	} else {
-		atomic.StoreUint32(&n.fullyLinkedInternal, 0)
-	}
-}
-
-func (n *float32Node) fullyLinked() bool {
-	return atomic.LoadUint32(&n.fullyLinkedInternal) == 1
-}
-
-func (n *float32Node) setMarked(val bool) {
-	if val {
-		atomic.StoreUint32(&n.markedInternal, 1)
-	} else {
-		atomic.StoreUint32(&n.markedInternal, 0)
-	}
-}
-
-func (n *float32Node) marked() bool {
-	return atomic.LoadUint32(&n.markedInternal) == 1
-}
-
 // NewFloat32 return an empty float32 skip set.
 func NewFloat32() *Float32Set {
 	h, t := newFloat32Node(0, maxLevel), newFloat32Node(0, maxLevel)
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
-	h.setFullyLinked(true)
-	t.setFullyLinked(true)
+	h.flags.SetTrue(fullyLinked)
+	t.flags.SetTrue(fullyLinked)
 	return &Float32Set{
 		header: h,
 		tail:   t,
@@ -144,8 +117,8 @@ func (s *Float32Set) Insert(score float32) bool {
 		lFound := s.findNodeInsert(score, &preds, &succs)
 		if lFound != -1 { // indicating the score is already in the skip-list
 			nodeFound := succs[lFound]
-			if !nodeFound.marked() {
-				for !nodeFound.fullyLinked() {
+			if !nodeFound.flags.Get(marked) {
+				for !nodeFound.flags.Get(fullyLinked) {
 					// The node is not yet fully linked, just waits until it is.
 				}
 				return false
@@ -173,7 +146,7 @@ func (s *Float32Set) Insert(score float32) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.marked() && !succ.marked() && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
 		}
 		if !valid {
 			unlockFloat32(preds, highestLocked)
@@ -185,7 +158,7 @@ func (s *Float32Set) Insert(score float32) bool {
 			nn.next[layer] = succs[layer]
 			preds[layer].storeNext(layer, nn)
 		}
-		nn.setFullyLinked(true)
+		nn.flags.SetTrue(fullyLinked)
 		unlockFloat32(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
@@ -205,7 +178,7 @@ func (s *Float32Set) Contains(score float32) bool {
 		// Check if the score already in the skip list.
 		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
-			return nex.fullyLinked() && !nex.marked()
+			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
 	return false
@@ -222,18 +195,18 @@ func (s *Float32Set) Delete(score float32) bool {
 	for {
 		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
-			lFound != -1 && succs[lFound].fullyLinked() && !succs[lFound].marked() && (len(succs[lFound].next)-1) == lFound {
+			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
 				nodeToDelete = succs[lFound]
 				topLayer = lFound
 				nodeToDelete.mu.Lock()
-				if nodeToDelete.marked() {
+				if nodeToDelete.flags.Get(marked) {
 					// The node is marked by another process,
 					// the physical deletion will be accomplished by another process.
 					nodeToDelete.mu.Unlock()
 					return false
 				}
-				nodeToDelete.setMarked(true)
+				nodeToDelete.flags.SetTrue(marked)
 				isMarked = true
 			}
 			// Accomplish the physical deletion.
@@ -254,7 +227,7 @@ func (s *Float32Set) Delete(score float32) bool {
 				// It is valid if:
 				// 1. the previous node exists.
 				// 2. no another node has inserted into the skip list in this layer.
-				valid = !pred.marked() && pred.loadNext(layer) == succ
+				valid = !pred.flags.Get(marked) && pred.loadNext(layer) == succ
 			}
 			if !valid {
 				unlockFloat32(preds, highestLocked)
@@ -282,7 +255,7 @@ func (s *Float32Set) Range(f func(i int, score float32) bool) {
 		x = s.header.loadNext(0)
 	)
 	for x != s.tail {
-		if x.marked() || !x.fullyLinked() {
+		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
@@ -309,19 +282,16 @@ type Float64Set struct {
 }
 
 type float64Node struct {
-	score               float64
-	next                []*float64Node
-	markedInternal      uint32
-	fullyLinkedInternal uint32
-	mu                  sync.Mutex
+	score float64
+	next  []*float64Node
+	mu    sync.Mutex
+	flags bitflag
 }
 
 func newFloat64Node(score float64, level int) *float64Node {
 	return &float64Node{
-		score:               score,
-		next:                make([]*float64Node, level),
-		markedInternal:      0,
-		fullyLinkedInternal: 0,
+		score: score,
+		next:  make([]*float64Node, level),
 	}
 }
 
@@ -335,38 +305,14 @@ func (n *float64Node) storeNext(i int, val *float64Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
 }
 
-func (n *float64Node) setFullyLinked(val bool) {
-	if val {
-		atomic.StoreUint32(&n.fullyLinkedInternal, 1)
-	} else {
-		atomic.StoreUint32(&n.fullyLinkedInternal, 0)
-	}
-}
-
-func (n *float64Node) fullyLinked() bool {
-	return atomic.LoadUint32(&n.fullyLinkedInternal) == 1
-}
-
-func (n *float64Node) setMarked(val bool) {
-	if val {
-		atomic.StoreUint32(&n.markedInternal, 1)
-	} else {
-		atomic.StoreUint32(&n.markedInternal, 0)
-	}
-}
-
-func (n *float64Node) marked() bool {
-	return atomic.LoadUint32(&n.markedInternal) == 1
-}
-
 // NewFloat64 return an empty float64 skip set.
 func NewFloat64() *Float64Set {
 	h, t := newFloat64Node(0, maxLevel), newFloat64Node(0, maxLevel)
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
-	h.setFullyLinked(true)
-	t.setFullyLinked(true)
+	h.flags.SetTrue(fullyLinked)
+	t.flags.SetTrue(fullyLinked)
 	return &Float64Set{
 		header: h,
 		tail:   t,
@@ -438,8 +384,8 @@ func (s *Float64Set) Insert(score float64) bool {
 		lFound := s.findNodeInsert(score, &preds, &succs)
 		if lFound != -1 { // indicating the score is already in the skip-list
 			nodeFound := succs[lFound]
-			if !nodeFound.marked() {
-				for !nodeFound.fullyLinked() {
+			if !nodeFound.flags.Get(marked) {
+				for !nodeFound.flags.Get(fullyLinked) {
 					// The node is not yet fully linked, just waits until it is.
 				}
 				return false
@@ -467,7 +413,7 @@ func (s *Float64Set) Insert(score float64) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.marked() && !succ.marked() && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
 		}
 		if !valid {
 			unlockFloat64(preds, highestLocked)
@@ -479,7 +425,7 @@ func (s *Float64Set) Insert(score float64) bool {
 			nn.next[layer] = succs[layer]
 			preds[layer].storeNext(layer, nn)
 		}
-		nn.setFullyLinked(true)
+		nn.flags.SetTrue(fullyLinked)
 		unlockFloat64(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
@@ -499,7 +445,7 @@ func (s *Float64Set) Contains(score float64) bool {
 		// Check if the score already in the skip list.
 		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
-			return nex.fullyLinked() && !nex.marked()
+			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
 	return false
@@ -516,18 +462,18 @@ func (s *Float64Set) Delete(score float64) bool {
 	for {
 		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
-			lFound != -1 && succs[lFound].fullyLinked() && !succs[lFound].marked() && (len(succs[lFound].next)-1) == lFound {
+			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
 				nodeToDelete = succs[lFound]
 				topLayer = lFound
 				nodeToDelete.mu.Lock()
-				if nodeToDelete.marked() {
+				if nodeToDelete.flags.Get(marked) {
 					// The node is marked by another process,
 					// the physical deletion will be accomplished by another process.
 					nodeToDelete.mu.Unlock()
 					return false
 				}
-				nodeToDelete.setMarked(true)
+				nodeToDelete.flags.SetTrue(marked)
 				isMarked = true
 			}
 			// Accomplish the physical deletion.
@@ -548,7 +494,7 @@ func (s *Float64Set) Delete(score float64) bool {
 				// It is valid if:
 				// 1. the previous node exists.
 				// 2. no another node has inserted into the skip list in this layer.
-				valid = !pred.marked() && pred.loadNext(layer) == succ
+				valid = !pred.flags.Get(marked) && pred.loadNext(layer) == succ
 			}
 			if !valid {
 				unlockFloat64(preds, highestLocked)
@@ -576,7 +522,7 @@ func (s *Float64Set) Range(f func(i int, score float64) bool) {
 		x = s.header.loadNext(0)
 	)
 	for x != s.tail {
-		if x.marked() || !x.fullyLinked() {
+		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
@@ -603,19 +549,16 @@ type Int32Set struct {
 }
 
 type int32Node struct {
-	score               int32
-	next                []*int32Node
-	markedInternal      uint32
-	fullyLinkedInternal uint32
-	mu                  sync.Mutex
+	score int32
+	next  []*int32Node
+	mu    sync.Mutex
+	flags bitflag
 }
 
 func newInt32Node(score int32, level int) *int32Node {
 	return &int32Node{
-		score:               score,
-		next:                make([]*int32Node, level),
-		markedInternal:      0,
-		fullyLinkedInternal: 0,
+		score: score,
+		next:  make([]*int32Node, level),
 	}
 }
 
@@ -629,38 +572,14 @@ func (n *int32Node) storeNext(i int, val *int32Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
 }
 
-func (n *int32Node) setFullyLinked(val bool) {
-	if val {
-		atomic.StoreUint32(&n.fullyLinkedInternal, 1)
-	} else {
-		atomic.StoreUint32(&n.fullyLinkedInternal, 0)
-	}
-}
-
-func (n *int32Node) fullyLinked() bool {
-	return atomic.LoadUint32(&n.fullyLinkedInternal) == 1
-}
-
-func (n *int32Node) setMarked(val bool) {
-	if val {
-		atomic.StoreUint32(&n.markedInternal, 1)
-	} else {
-		atomic.StoreUint32(&n.markedInternal, 0)
-	}
-}
-
-func (n *int32Node) marked() bool {
-	return atomic.LoadUint32(&n.markedInternal) == 1
-}
-
 // NewInt32 return an empty int32 skip set.
 func NewInt32() *Int32Set {
 	h, t := newInt32Node(0, maxLevel), newInt32Node(0, maxLevel)
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
-	h.setFullyLinked(true)
-	t.setFullyLinked(true)
+	h.flags.SetTrue(fullyLinked)
+	t.flags.SetTrue(fullyLinked)
 	return &Int32Set{
 		header: h,
 		tail:   t,
@@ -732,8 +651,8 @@ func (s *Int32Set) Insert(score int32) bool {
 		lFound := s.findNodeInsert(score, &preds, &succs)
 		if lFound != -1 { // indicating the score is already in the skip-list
 			nodeFound := succs[lFound]
-			if !nodeFound.marked() {
-				for !nodeFound.fullyLinked() {
+			if !nodeFound.flags.Get(marked) {
+				for !nodeFound.flags.Get(fullyLinked) {
 					// The node is not yet fully linked, just waits until it is.
 				}
 				return false
@@ -761,7 +680,7 @@ func (s *Int32Set) Insert(score int32) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.marked() && !succ.marked() && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
 		}
 		if !valid {
 			unlockInt32(preds, highestLocked)
@@ -773,7 +692,7 @@ func (s *Int32Set) Insert(score int32) bool {
 			nn.next[layer] = succs[layer]
 			preds[layer].storeNext(layer, nn)
 		}
-		nn.setFullyLinked(true)
+		nn.flags.SetTrue(fullyLinked)
 		unlockInt32(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
@@ -793,7 +712,7 @@ func (s *Int32Set) Contains(score int32) bool {
 		// Check if the score already in the skip list.
 		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
-			return nex.fullyLinked() && !nex.marked()
+			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
 	return false
@@ -810,18 +729,18 @@ func (s *Int32Set) Delete(score int32) bool {
 	for {
 		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
-			lFound != -1 && succs[lFound].fullyLinked() && !succs[lFound].marked() && (len(succs[lFound].next)-1) == lFound {
+			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
 				nodeToDelete = succs[lFound]
 				topLayer = lFound
 				nodeToDelete.mu.Lock()
-				if nodeToDelete.marked() {
+				if nodeToDelete.flags.Get(marked) {
 					// The node is marked by another process,
 					// the physical deletion will be accomplished by another process.
 					nodeToDelete.mu.Unlock()
 					return false
 				}
-				nodeToDelete.setMarked(true)
+				nodeToDelete.flags.SetTrue(marked)
 				isMarked = true
 			}
 			// Accomplish the physical deletion.
@@ -842,7 +761,7 @@ func (s *Int32Set) Delete(score int32) bool {
 				// It is valid if:
 				// 1. the previous node exists.
 				// 2. no another node has inserted into the skip list in this layer.
-				valid = !pred.marked() && pred.loadNext(layer) == succ
+				valid = !pred.flags.Get(marked) && pred.loadNext(layer) == succ
 			}
 			if !valid {
 				unlockInt32(preds, highestLocked)
@@ -870,7 +789,7 @@ func (s *Int32Set) Range(f func(i int, score int32) bool) {
 		x = s.header.loadNext(0)
 	)
 	for x != s.tail {
-		if x.marked() || !x.fullyLinked() {
+		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
@@ -897,19 +816,16 @@ type IntSet struct {
 }
 
 type intNode struct {
-	score               int
-	next                []*intNode
-	markedInternal      uint32
-	fullyLinkedInternal uint32
-	mu                  sync.Mutex
+	score int
+	next  []*intNode
+	mu    sync.Mutex
+	flags bitflag
 }
 
 func newIntNode(score int, level int) *intNode {
 	return &intNode{
-		score:               score,
-		next:                make([]*intNode, level),
-		markedInternal:      0,
-		fullyLinkedInternal: 0,
+		score: score,
+		next:  make([]*intNode, level),
 	}
 }
 
@@ -923,38 +839,14 @@ func (n *intNode) storeNext(i int, val *intNode) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
 }
 
-func (n *intNode) setFullyLinked(val bool) {
-	if val {
-		atomic.StoreUint32(&n.fullyLinkedInternal, 1)
-	} else {
-		atomic.StoreUint32(&n.fullyLinkedInternal, 0)
-	}
-}
-
-func (n *intNode) fullyLinked() bool {
-	return atomic.LoadUint32(&n.fullyLinkedInternal) == 1
-}
-
-func (n *intNode) setMarked(val bool) {
-	if val {
-		atomic.StoreUint32(&n.markedInternal, 1)
-	} else {
-		atomic.StoreUint32(&n.markedInternal, 0)
-	}
-}
-
-func (n *intNode) marked() bool {
-	return atomic.LoadUint32(&n.markedInternal) == 1
-}
-
 // NewInt return an empty int skip set.
 func NewInt() *IntSet {
 	h, t := newIntNode(0, maxLevel), newIntNode(0, maxLevel)
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
-	h.setFullyLinked(true)
-	t.setFullyLinked(true)
+	h.flags.SetTrue(fullyLinked)
+	t.flags.SetTrue(fullyLinked)
 	return &IntSet{
 		header: h,
 		tail:   t,
@@ -1026,8 +918,8 @@ func (s *IntSet) Insert(score int) bool {
 		lFound := s.findNodeInsert(score, &preds, &succs)
 		if lFound != -1 { // indicating the score is already in the skip-list
 			nodeFound := succs[lFound]
-			if !nodeFound.marked() {
-				for !nodeFound.fullyLinked() {
+			if !nodeFound.flags.Get(marked) {
+				for !nodeFound.flags.Get(fullyLinked) {
 					// The node is not yet fully linked, just waits until it is.
 				}
 				return false
@@ -1055,7 +947,7 @@ func (s *IntSet) Insert(score int) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.marked() && !succ.marked() && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
 		}
 		if !valid {
 			unlockInt(preds, highestLocked)
@@ -1067,7 +959,7 @@ func (s *IntSet) Insert(score int) bool {
 			nn.next[layer] = succs[layer]
 			preds[layer].storeNext(layer, nn)
 		}
-		nn.setFullyLinked(true)
+		nn.flags.SetTrue(fullyLinked)
 		unlockInt(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
@@ -1087,7 +979,7 @@ func (s *IntSet) Contains(score int) bool {
 		// Check if the score already in the skip list.
 		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
-			return nex.fullyLinked() && !nex.marked()
+			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
 	return false
@@ -1104,18 +996,18 @@ func (s *IntSet) Delete(score int) bool {
 	for {
 		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
-			lFound != -1 && succs[lFound].fullyLinked() && !succs[lFound].marked() && (len(succs[lFound].next)-1) == lFound {
+			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
 				nodeToDelete = succs[lFound]
 				topLayer = lFound
 				nodeToDelete.mu.Lock()
-				if nodeToDelete.marked() {
+				if nodeToDelete.flags.Get(marked) {
 					// The node is marked by another process,
 					// the physical deletion will be accomplished by another process.
 					nodeToDelete.mu.Unlock()
 					return false
 				}
-				nodeToDelete.setMarked(true)
+				nodeToDelete.flags.SetTrue(marked)
 				isMarked = true
 			}
 			// Accomplish the physical deletion.
@@ -1136,7 +1028,7 @@ func (s *IntSet) Delete(score int) bool {
 				// It is valid if:
 				// 1. the previous node exists.
 				// 2. no another node has inserted into the skip list in this layer.
-				valid = !pred.marked() && pred.loadNext(layer) == succ
+				valid = !pred.flags.Get(marked) && pred.loadNext(layer) == succ
 			}
 			if !valid {
 				unlockInt(preds, highestLocked)
@@ -1164,7 +1056,7 @@ func (s *IntSet) Range(f func(i int, score int) bool) {
 		x = s.header.loadNext(0)
 	)
 	for x != s.tail {
-		if x.marked() || !x.fullyLinked() {
+		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
@@ -1191,19 +1083,16 @@ type Uint32Set struct {
 }
 
 type uint32Node struct {
-	score               uint32
-	next                []*uint32Node
-	markedInternal      uint32
-	fullyLinkedInternal uint32
-	mu                  sync.Mutex
+	score uint32
+	next  []*uint32Node
+	mu    sync.Mutex
+	flags bitflag
 }
 
 func newUint32Node(score uint32, level int) *uint32Node {
 	return &uint32Node{
-		score:               score,
-		next:                make([]*uint32Node, level),
-		markedInternal:      0,
-		fullyLinkedInternal: 0,
+		score: score,
+		next:  make([]*uint32Node, level),
 	}
 }
 
@@ -1217,38 +1106,14 @@ func (n *uint32Node) storeNext(i int, val *uint32Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
 }
 
-func (n *uint32Node) setFullyLinked(val bool) {
-	if val {
-		atomic.StoreUint32(&n.fullyLinkedInternal, 1)
-	} else {
-		atomic.StoreUint32(&n.fullyLinkedInternal, 0)
-	}
-}
-
-func (n *uint32Node) fullyLinked() bool {
-	return atomic.LoadUint32(&n.fullyLinkedInternal) == 1
-}
-
-func (n *uint32Node) setMarked(val bool) {
-	if val {
-		atomic.StoreUint32(&n.markedInternal, 1)
-	} else {
-		atomic.StoreUint32(&n.markedInternal, 0)
-	}
-}
-
-func (n *uint32Node) marked() bool {
-	return atomic.LoadUint32(&n.markedInternal) == 1
-}
-
 // NewUint32 return an empty uint32 skip set.
 func NewUint32() *Uint32Set {
 	h, t := newUint32Node(0, maxLevel), newUint32Node(0, maxLevel)
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
-	h.setFullyLinked(true)
-	t.setFullyLinked(true)
+	h.flags.SetTrue(fullyLinked)
+	t.flags.SetTrue(fullyLinked)
 	return &Uint32Set{
 		header: h,
 		tail:   t,
@@ -1320,8 +1185,8 @@ func (s *Uint32Set) Insert(score uint32) bool {
 		lFound := s.findNodeInsert(score, &preds, &succs)
 		if lFound != -1 { // indicating the score is already in the skip-list
 			nodeFound := succs[lFound]
-			if !nodeFound.marked() {
-				for !nodeFound.fullyLinked() {
+			if !nodeFound.flags.Get(marked) {
+				for !nodeFound.flags.Get(fullyLinked) {
 					// The node is not yet fully linked, just waits until it is.
 				}
 				return false
@@ -1349,7 +1214,7 @@ func (s *Uint32Set) Insert(score uint32) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.marked() && !succ.marked() && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
 		}
 		if !valid {
 			unlockUint32(preds, highestLocked)
@@ -1361,7 +1226,7 @@ func (s *Uint32Set) Insert(score uint32) bool {
 			nn.next[layer] = succs[layer]
 			preds[layer].storeNext(layer, nn)
 		}
-		nn.setFullyLinked(true)
+		nn.flags.SetTrue(fullyLinked)
 		unlockUint32(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
@@ -1381,7 +1246,7 @@ func (s *Uint32Set) Contains(score uint32) bool {
 		// Check if the score already in the skip list.
 		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
-			return nex.fullyLinked() && !nex.marked()
+			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
 	return false
@@ -1398,18 +1263,18 @@ func (s *Uint32Set) Delete(score uint32) bool {
 	for {
 		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
-			lFound != -1 && succs[lFound].fullyLinked() && !succs[lFound].marked() && (len(succs[lFound].next)-1) == lFound {
+			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
 				nodeToDelete = succs[lFound]
 				topLayer = lFound
 				nodeToDelete.mu.Lock()
-				if nodeToDelete.marked() {
+				if nodeToDelete.flags.Get(marked) {
 					// The node is marked by another process,
 					// the physical deletion will be accomplished by another process.
 					nodeToDelete.mu.Unlock()
 					return false
 				}
-				nodeToDelete.setMarked(true)
+				nodeToDelete.flags.SetTrue(marked)
 				isMarked = true
 			}
 			// Accomplish the physical deletion.
@@ -1430,7 +1295,7 @@ func (s *Uint32Set) Delete(score uint32) bool {
 				// It is valid if:
 				// 1. the previous node exists.
 				// 2. no another node has inserted into the skip list in this layer.
-				valid = !pred.marked() && pred.loadNext(layer) == succ
+				valid = !pred.flags.Get(marked) && pred.loadNext(layer) == succ
 			}
 			if !valid {
 				unlockUint32(preds, highestLocked)
@@ -1458,7 +1323,7 @@ func (s *Uint32Set) Range(f func(i int, score uint32) bool) {
 		x = s.header.loadNext(0)
 	)
 	for x != s.tail {
-		if x.marked() || !x.fullyLinked() {
+		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
@@ -1485,19 +1350,16 @@ type Uint64Set struct {
 }
 
 type uint64Node struct {
-	score               uint64
-	next                []*uint64Node
-	markedInternal      uint32
-	fullyLinkedInternal uint32
-	mu                  sync.Mutex
+	score uint64
+	next  []*uint64Node
+	mu    sync.Mutex
+	flags bitflag
 }
 
 func newUint64Node(score uint64, level int) *uint64Node {
 	return &uint64Node{
-		score:               score,
-		next:                make([]*uint64Node, level),
-		markedInternal:      0,
-		fullyLinkedInternal: 0,
+		score: score,
+		next:  make([]*uint64Node, level),
 	}
 }
 
@@ -1511,38 +1373,14 @@ func (n *uint64Node) storeNext(i int, val *uint64Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
 }
 
-func (n *uint64Node) setFullyLinked(val bool) {
-	if val {
-		atomic.StoreUint32(&n.fullyLinkedInternal, 1)
-	} else {
-		atomic.StoreUint32(&n.fullyLinkedInternal, 0)
-	}
-}
-
-func (n *uint64Node) fullyLinked() bool {
-	return atomic.LoadUint32(&n.fullyLinkedInternal) == 1
-}
-
-func (n *uint64Node) setMarked(val bool) {
-	if val {
-		atomic.StoreUint32(&n.markedInternal, 1)
-	} else {
-		atomic.StoreUint32(&n.markedInternal, 0)
-	}
-}
-
-func (n *uint64Node) marked() bool {
-	return atomic.LoadUint32(&n.markedInternal) == 1
-}
-
 // NewUint64 return an empty uint64 skip set.
 func NewUint64() *Uint64Set {
 	h, t := newUint64Node(0, maxLevel), newUint64Node(0, maxLevel)
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
-	h.setFullyLinked(true)
-	t.setFullyLinked(true)
+	h.flags.SetTrue(fullyLinked)
+	t.flags.SetTrue(fullyLinked)
 	return &Uint64Set{
 		header: h,
 		tail:   t,
@@ -1614,8 +1452,8 @@ func (s *Uint64Set) Insert(score uint64) bool {
 		lFound := s.findNodeInsert(score, &preds, &succs)
 		if lFound != -1 { // indicating the score is already in the skip-list
 			nodeFound := succs[lFound]
-			if !nodeFound.marked() {
-				for !nodeFound.fullyLinked() {
+			if !nodeFound.flags.Get(marked) {
+				for !nodeFound.flags.Get(fullyLinked) {
 					// The node is not yet fully linked, just waits until it is.
 				}
 				return false
@@ -1643,7 +1481,7 @@ func (s *Uint64Set) Insert(score uint64) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.marked() && !succ.marked() && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
 		}
 		if !valid {
 			unlockUint64(preds, highestLocked)
@@ -1655,7 +1493,7 @@ func (s *Uint64Set) Insert(score uint64) bool {
 			nn.next[layer] = succs[layer]
 			preds[layer].storeNext(layer, nn)
 		}
-		nn.setFullyLinked(true)
+		nn.flags.SetTrue(fullyLinked)
 		unlockUint64(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
@@ -1675,7 +1513,7 @@ func (s *Uint64Set) Contains(score uint64) bool {
 		// Check if the score already in the skip list.
 		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
-			return nex.fullyLinked() && !nex.marked()
+			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
 	return false
@@ -1692,18 +1530,18 @@ func (s *Uint64Set) Delete(score uint64) bool {
 	for {
 		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
-			lFound != -1 && succs[lFound].fullyLinked() && !succs[lFound].marked() && (len(succs[lFound].next)-1) == lFound {
+			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
 				nodeToDelete = succs[lFound]
 				topLayer = lFound
 				nodeToDelete.mu.Lock()
-				if nodeToDelete.marked() {
+				if nodeToDelete.flags.Get(marked) {
 					// The node is marked by another process,
 					// the physical deletion will be accomplished by another process.
 					nodeToDelete.mu.Unlock()
 					return false
 				}
-				nodeToDelete.setMarked(true)
+				nodeToDelete.flags.SetTrue(marked)
 				isMarked = true
 			}
 			// Accomplish the physical deletion.
@@ -1724,7 +1562,7 @@ func (s *Uint64Set) Delete(score uint64) bool {
 				// It is valid if:
 				// 1. the previous node exists.
 				// 2. no another node has inserted into the skip list in this layer.
-				valid = !pred.marked() && pred.loadNext(layer) == succ
+				valid = !pred.flags.Get(marked) && pred.loadNext(layer) == succ
 			}
 			if !valid {
 				unlockUint64(preds, highestLocked)
@@ -1752,7 +1590,7 @@ func (s *Uint64Set) Range(f func(i int, score uint64) bool) {
 		x = s.header.loadNext(0)
 	)
 	for x != s.tail {
-		if x.marked() || !x.fullyLinked() {
+		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
@@ -1779,19 +1617,16 @@ type UintSet struct {
 }
 
 type uintNode struct {
-	score               uint
-	next                []*uintNode
-	markedInternal      uint32
-	fullyLinkedInternal uint32
-	mu                  sync.Mutex
+	score uint
+	next  []*uintNode
+	mu    sync.Mutex
+	flags bitflag
 }
 
 func newUintNode(score uint, level int) *uintNode {
 	return &uintNode{
-		score:               score,
-		next:                make([]*uintNode, level),
-		markedInternal:      0,
-		fullyLinkedInternal: 0,
+		score: score,
+		next:  make([]*uintNode, level),
 	}
 }
 
@@ -1805,38 +1640,14 @@ func (n *uintNode) storeNext(i int, val *uintNode) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
 }
 
-func (n *uintNode) setFullyLinked(val bool) {
-	if val {
-		atomic.StoreUint32(&n.fullyLinkedInternal, 1)
-	} else {
-		atomic.StoreUint32(&n.fullyLinkedInternal, 0)
-	}
-}
-
-func (n *uintNode) fullyLinked() bool {
-	return atomic.LoadUint32(&n.fullyLinkedInternal) == 1
-}
-
-func (n *uintNode) setMarked(val bool) {
-	if val {
-		atomic.StoreUint32(&n.markedInternal, 1)
-	} else {
-		atomic.StoreUint32(&n.markedInternal, 0)
-	}
-}
-
-func (n *uintNode) marked() bool {
-	return atomic.LoadUint32(&n.markedInternal) == 1
-}
-
 // NewUint return an empty uint skip set.
 func NewUint() *UintSet {
 	h, t := newUintNode(0, maxLevel), newUintNode(0, maxLevel)
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
-	h.setFullyLinked(true)
-	t.setFullyLinked(true)
+	h.flags.SetTrue(fullyLinked)
+	t.flags.SetTrue(fullyLinked)
 	return &UintSet{
 		header: h,
 		tail:   t,
@@ -1908,8 +1719,8 @@ func (s *UintSet) Insert(score uint) bool {
 		lFound := s.findNodeInsert(score, &preds, &succs)
 		if lFound != -1 { // indicating the score is already in the skip-list
 			nodeFound := succs[lFound]
-			if !nodeFound.marked() {
-				for !nodeFound.fullyLinked() {
+			if !nodeFound.flags.Get(marked) {
+				for !nodeFound.flags.Get(fullyLinked) {
 					// The node is not yet fully linked, just waits until it is.
 				}
 				return false
@@ -1937,7 +1748,7 @@ func (s *UintSet) Insert(score uint) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.marked() && !succ.marked() && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
 		}
 		if !valid {
 			unlockUint(preds, highestLocked)
@@ -1949,7 +1760,7 @@ func (s *UintSet) Insert(score uint) bool {
 			nn.next[layer] = succs[layer]
 			preds[layer].storeNext(layer, nn)
 		}
-		nn.setFullyLinked(true)
+		nn.flags.SetTrue(fullyLinked)
 		unlockUint(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
@@ -1969,7 +1780,7 @@ func (s *UintSet) Contains(score uint) bool {
 		// Check if the score already in the skip list.
 		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
-			return nex.fullyLinked() && !nex.marked()
+			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
 	return false
@@ -1986,18 +1797,18 @@ func (s *UintSet) Delete(score uint) bool {
 	for {
 		lFound := s.findNodeDelete(score, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
-			lFound != -1 && succs[lFound].fullyLinked() && !succs[lFound].marked() && (len(succs[lFound].next)-1) == lFound {
+			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
 				nodeToDelete = succs[lFound]
 				topLayer = lFound
 				nodeToDelete.mu.Lock()
-				if nodeToDelete.marked() {
+				if nodeToDelete.flags.Get(marked) {
 					// The node is marked by another process,
 					// the physical deletion will be accomplished by another process.
 					nodeToDelete.mu.Unlock()
 					return false
 				}
-				nodeToDelete.setMarked(true)
+				nodeToDelete.flags.SetTrue(marked)
 				isMarked = true
 			}
 			// Accomplish the physical deletion.
@@ -2018,7 +1829,7 @@ func (s *UintSet) Delete(score uint) bool {
 				// It is valid if:
 				// 1. the previous node exists.
 				// 2. no another node has inserted into the skip list in this layer.
-				valid = !pred.marked() && pred.loadNext(layer) == succ
+				valid = !pred.flags.Get(marked) && pred.loadNext(layer) == succ
 			}
 			if !valid {
 				unlockUint(preds, highestLocked)
@@ -2046,7 +1857,7 @@ func (s *UintSet) Range(f func(i int, score uint) bool) {
 		x = s.header.loadNext(0)
 	)
 	for x != s.tail {
-		if x.marked() || !x.fullyLinked() {
+		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}

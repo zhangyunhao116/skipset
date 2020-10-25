@@ -7,8 +7,6 @@ import (
 	"testing"
 )
 
-const randN = 1 << 20
-
 func Example() {
 	l := NewInt()
 
@@ -90,7 +88,7 @@ func TestNewInt64(t *testing.T) {
 
 	const num = math.MaxInt16
 	// Make rand shuffle array.
-	// The tastArray contains [1,num]
+	// The testArray contains [1,num]
 	testArray := make([]int64, num)
 	testArray[0] = num + 1
 	for i := 1; i < num; i++ {
@@ -130,7 +128,7 @@ func TestNewInt64(t *testing.T) {
 		go func() {
 			if !l.Contains(testArray[i]) {
 				wg.Done()
-				t.Fatalf("insert dosen't contains %d", i)
+				panic(fmt.Sprintf("insert doesn't contains %d", i))
 			}
 			wg.Done()
 		}()
@@ -144,7 +142,7 @@ func TestNewInt64(t *testing.T) {
 		go func() {
 			if !l.Delete(testArray[i]) {
 				wg.Done()
-				t.Fatalf("can't delete %d", i)
+				panic(fmt.Sprintf("can't delete %d", i))
 			}
 			wg.Done()
 		}()
@@ -160,19 +158,16 @@ func TestNewInt64(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			r := fastrandn(num)
-			if r == 0 { // we don't want to insert 0.
-				r = 1
-			}
 			if r < 333 {
-				l.Insert(int64(fastrandn(smallRndN)))
+				l.Insert(int64(fastrandn(smallRndN)) + 1)
 			} else if r < 666 {
-				l.Contains(int64(fastrandn(smallRndN)))
+				l.Contains(int64(fastrandn(smallRndN)) + 1)
 			} else if r != 999 {
-				l.Delete(int64(fastrandn(smallRndN)))
+				l.Delete(int64(fastrandn(smallRndN)) + 1)
 			} else {
 				l.Range(func(i int, score int64) bool {
 					if score == 0 { // default header and tail score
-						t.Fatal("invalid content")
+						panic("invalid content")
 					}
 					return true
 				})
@@ -181,160 +176,4 @@ func TestNewInt64(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-}
-
-func BenchmarkInsert_SkipSet(b *testing.B) {
-	l := NewInt64()
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			l.Insert(int64(fastrandn(randN)))
-		}
-	})
-}
-
-func BenchmarkInsert_SyncMap(b *testing.B) {
-	var l sync.Map
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			l.Store(fastrandn(randN), nil)
-		}
-	})
-}
-
-func Benchmark50Insert50Contains_SkipSet(b *testing.B) {
-	l := NewInt64()
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			u := fastrandn(2)
-			if u == 0 {
-				l.Insert(int64(fastrandn(randN)))
-			} else {
-				l.Contains(int64(fastrandn(randN)))
-			}
-		}
-	})
-}
-
-func Benchmark50Insert50Contains_SyncMap(b *testing.B) {
-	var l sync.Map
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			u := fastrandn(2)
-			if u == 0 {
-				l.Store(fastrandn(randN), nil)
-			} else {
-				l.Load(fastrandn(randN))
-			}
-		}
-	})
-}
-
-func Benchmark30Insert70Contains_SkipSet(b *testing.B) {
-	l := NewInt64()
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			u := fastrandn(10)
-			if u < 3 {
-				l.Insert(int64(fastrandn(randN)))
-			} else {
-				l.Contains(int64(fastrandn(randN)))
-			}
-		}
-	})
-}
-
-func Benchmark30Insert70Contains_SyncMap(b *testing.B) {
-	var l sync.Map
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			u := fastrandn(10)
-			if u < 3 {
-				l.Store(fastrandn(randN), nil)
-			} else {
-				l.Load(fastrandn(randN))
-			}
-		}
-	})
-}
-
-func Benchmark1Delete9Insert90Contains_SkipSet(b *testing.B) {
-	l := NewInt64()
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			u := fastrandn(100)
-			if u == 1 {
-				l.Insert(int64(fastrandn(randN)))
-			} else if u == 2 {
-				l.Delete(int64(fastrandn(randN)))
-			} else {
-				l.Contains(int64(fastrandn(randN)))
-			}
-		}
-	})
-}
-
-func Benchmark1Delete9Insert90Contains_SyncMap(b *testing.B) {
-	var l sync.Map
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			u := fastrandn(100)
-			if u == 1 {
-				l.Store(fastrandn(randN), nil)
-			} else if u == 2 {
-				l.Delete(fastrandn(randN))
-			} else {
-				l.Load(fastrandn(randN))
-			}
-		}
-	})
-}
-
-func Benchmark1Range9Delete90Insert900Contains_SkipSet(b *testing.B) {
-	l := NewInt64()
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			u := fastrandn(1000)
-			if u == 0 {
-				l.Range(func(i int, score int64) bool {
-					return true
-				})
-			} else if u > 10 && u < 20 {
-				l.Delete(int64(fastrandn(randN)))
-			} else if u >= 100 && u < 190 {
-				l.Insert(int64(fastrandn(randN)))
-			} else {
-				l.Contains(int64(fastrandn(randN)))
-			}
-		}
-	})
-}
-
-func Benchmark1Range9Delete90Insert900Contains_SyncMap(b *testing.B) {
-	var l sync.Map
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			u := fastrandn(1000)
-			if u == 0 {
-				l.Range(func(key, value interface{}) bool {
-					return true
-				})
-			} else if u > 10 && u < 20 {
-				l.Delete(fastrandn(randN))
-			} else if u >= 100 && u < 190 {
-				l.Store(fastrandn(randN), nil)
-			} else {
-				l.Load(fastrandn(randN))
-			}
-		}
-	})
 }

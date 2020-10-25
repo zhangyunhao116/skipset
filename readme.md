@@ -57,21 +57,40 @@ OS: ubuntu 18.04
 MEMORY: 32GB
 
 ```shell
-$ go test -run=NOTEST -bench=. -count=20 -timeout=60m > x.txt
+$ go test -run=NOTEST -bench=. -count=20 -timeout=60m -benchmem > x.txt
 $ benchstat x.txt
 ```
 
 ```
 name                                          time/op
-Insert_SkipSet-16                              137ns ± 6%
-Insert_SyncMap-16                              595ns ± 4%
-50Insert50Contains_SkipSet-16                  123ns ± 2%
-50Insert50Contains_SyncMap-16                  591ns ± 8%
-30Insert70Contains_SkipSet-16                  114ns ± 2%
-30Insert70Contains_SyncMap-16                  569ns ± 6%
-1Delete9Insert90Contains_SkipSet-16           50.8ns ± 3%
-1Delete9Insert90Contains_SyncMap-16            503ns ± 1%
-1Range9Delete90Insert900Contains_SkipSet-16   1.67µs ± 8%
-1Range9Delete90Insert900Contains_SyncMap-16   6.25µs ± 9%
-```
+Insert/skipset-16                              322ns ± 8%
+Insert/sync.Map-16                             654ns ±12%
+Contains100Hits/skipset-16                    10.5ns ± 6%
+Contains100Hits/sync.Map-16                   6.53ns ±14%
+Contains50Hits/skipset-16                     11.4ns ± 4%
+Contains50Hits/sync.Map-16                    5.50ns ±12%
+50Insert50Contains/skipset-16                  228ns ± 4%
+50Insert50Contains/sync.Map-16                 629ns ±12%
+30Insert70Contains/skipset-16                  190ns ± 4%
+30Insert70Contains/sync.Map-16                 632ns ± 4%
+1Delete9Insert90Contains/skipset-16           55.7ns ± 2%
+1Delete9Insert90Contains/sync.Map-16           492ns ± 1%
+1Range9Delete90Insert900Contains/skipset-16   2.77µs ±10%
+1Range9Delete90Insert900Contains/sync.Map-16  6.65µs ± 4%
 
+name                                          alloc/op
+Insert/skipset-16                              59.0B ± 0%
+Insert/sync.Map-16                              159B ±21%
+Contains100Hits/skipset-16                     0.00B     
+Contains100Hits/sync.Map-16                    0.00B     
+Contains50Hits/skipset-16                      0.00B     
+Contains50Hits/sync.Map-16                     0.00B     
+50Insert50Contains/skipset-16                  29.0B ± 0%
+50Insert50Contains/sync.Map-16                 87.8B ± 4%
+30Insert70Contains/skipset-16                  17.0B ± 0%
+30Insert70Contains/sync.Map-16                 71.9B ±10%
+1Delete9Insert90Contains/skipset-16            0.00B     
+1Delete9Insert90Contains/sync.Map-16           48.0B ± 0%
+1Range9Delete90Insert900Contains/skipset-16    5.00B ± 0%
+1Range9Delete90Insert900Contains/sync.Map-16  2.21kB ± 4%
+```

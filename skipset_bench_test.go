@@ -89,6 +89,43 @@ func BenchmarkContains50Hits(b *testing.B) {
 	})
 }
 
+func BenchmarkContainsNoHits(b *testing.B) {
+	b.Run("skipset", func(b *testing.B) {
+		l := NewInt64()
+		invalid := make([]int64, 0, initsize)
+		for i := 0; i < initsize*2; i++ {
+			if i%2 == 0 {
+				l.Insert(int64(i))
+			} else {
+				invalid = append(invalid, int64(i))
+			}
+		}
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				_ = l.Contains(invalid[fastrandn(uint32(len(invalid)))])
+			}
+		})
+	})
+	b.Run("sync.Map", func(b *testing.B) {
+		var l sync.Map
+		invalid := make([]int64, 0, initsize)
+		for i := 0; i < initsize*2; i++ {
+			if i%2 == 0 {
+				l.Store(int64(i), nil)
+			} else {
+				invalid = append(invalid, int64(i))
+			}
+		}
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				_, _ = l.Load(invalid[fastrandn(uint32(len(invalid)))])
+			}
+		})
+	})
+}
+
 func Benchmark50Insert50Contains(b *testing.B) {
 	b.Run("skipset", func(b *testing.B) {
 		l := NewInt64()

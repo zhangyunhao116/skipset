@@ -177,3 +177,8 @@ func TestNewInt64(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+func TestNewString(t *testing.T) {
+	x := NewString()
+	x.Insert("1111111")
+}

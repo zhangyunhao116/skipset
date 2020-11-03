@@ -176,7 +176,6 @@ func (s *Float32Set) Contains(score float32) bool {
 		}
 
 		// Check if the score already in the skip list.
-		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
@@ -443,7 +442,6 @@ func (s *Float64Set) Contains(score float64) bool {
 		}
 
 		// Check if the score already in the skip list.
-		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
@@ -710,7 +708,6 @@ func (s *Int32Set) Contains(score int32) bool {
 		}
 
 		// Check if the score already in the skip list.
-		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
@@ -977,7 +974,6 @@ func (s *IntSet) Contains(score int) bool {
 		}
 
 		// Check if the score already in the skip list.
-		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
@@ -1244,7 +1240,6 @@ func (s *Uint32Set) Contains(score uint32) bool {
 		}
 
 		// Check if the score already in the skip list.
-		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
@@ -1511,7 +1506,6 @@ func (s *Uint64Set) Contains(score uint64) bool {
 		}
 
 		// Check if the score already in the skip list.
-		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
@@ -1778,7 +1772,6 @@ func (s *UintSet) Contains(score uint) bool {
 		}
 
 		// Check if the score already in the skip list.
-		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}

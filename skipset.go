@@ -178,7 +178,6 @@ func (s *Int64Set) Contains(score int64) bool {
 		}
 
 		// Check if the score already in the skip list.
-		nex = x.loadNext(i)
 		if nex != s.tail && score == nex.score {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}

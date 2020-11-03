@@ -63,20 +63,22 @@ $ benchstat x.txt
 
 ```
 name                                                time/op
-Insert/skipset-16                                    322ns ± 8%
-Insert/sync.Map-16                                   654ns ±12%
-Contains100Hits/skipset-16                          10.5ns ± 6%
-Contains100Hits/sync.Map-16                         6.53ns ±14%
-Contains50Hits/skipset-16                           11.4ns ± 4%
-Contains50Hits/sync.Map-16                          5.50ns ±12%
-50Insert50Contains/skipset-16                        228ns ± 4%
-50Insert50Contains/sync.Map-16                       629ns ±12%
-30Insert70Contains/skipset-16                        190ns ± 4%
-30Insert70Contains/sync.Map-16                       632ns ± 4%
-1Delete9Insert90Contains/skipset-16                 55.7ns ± 2%
-1Delete9Insert90Contains/sync.Map-16                 492ns ± 1%
-1Range9Delete90Insert900Contains/skipset-16         2.77µs ±10%
-1Range9Delete90Insert900Contains/sync.Map-16        6.65µs ± 4%
+Insert/skipset-16                                    326ns ± 8%
+Insert/sync.Map-16                                   662ns ±11%
+Contains100Hits/skipset-16                          9.37ns ± 4%
+Contains100Hits/sync.Map-16                         6.31ns ±16%
+Contains50Hits/skipset-16                           9.76ns ± 6%
+Contains50Hits/sync.Map-16                          5.51ns ±11%
+ContainsNoHits/skipset-16                           9.85ns ± 5%
+ContainsNoHits/sync.Map-16                          4.57ns ±12%
+50Insert50Contains/skipset-16                        226ns ± 6%
+50Insert50Contains/sync.Map-16                       609ns ± 7%
+30Insert70Contains/skipset-16                        186ns ± 6%
+30Insert70Contains/sync.Map-16                       624ns ± 6%
+1Delete9Insert90Contains/skipset-16                 54.7ns ± 5%
+1Delete9Insert90Contains/sync.Map-16                 493ns ± 1%
+1Range9Delete90Insert900Contains/skipset-16         2.71µs ± 9%
+1Range9Delete90Insert900Contains/sync.Map-16        6.62µs ± 6%
 StringInsert/skipset-16                              322ns ± 7%
 StringInsert/sync.Map-16                            1.05µs ± 4%
 StringContains50Hits/skipset-16                     19.6ns ± 5%

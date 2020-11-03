@@ -3,6 +3,8 @@ package skipset
 import (
 	"fmt"
 	"math"
+	"sort"
+	"strconv"
 	"sync"
 	"testing"
 )
@@ -176,4 +178,52 @@ func TestNewInt64(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+}
+
+func TestNewString(t *testing.T) {
+	x := NewString()
+	if !x.Insert("111") || x.Len() != 1 {
+		t.Fatal("invalid")
+	}
+	if !x.Insert("222") || x.Len() != 2 {
+		t.Fatal("invalid")
+	}
+	if x.Insert("111") || x.Len() != 2 {
+		t.Fatal("invalid")
+	}
+	if !x.Contains("111") || !x.Contains("222") {
+		t.Fatal("invalid")
+	}
+	if !x.Delete("111") || x.Len() != 1 {
+		t.Fatal("invalid")
+	}
+	if !x.Delete("222") || x.Len() != 0 {
+		t.Fatal("invalid")
+	}
+
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		i := i
+		go func() {
+			if !x.Insert(strconv.Itoa(i)) {
+				panic("invalid")
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	tmp := make([]int, 0, 100)
+	x.Range(func(i int, val string) bool {
+		res, _ := strconv.Atoi(val)
+		tmp = append(tmp, res)
+		return true
+	})
+	sort.Sort(sort.IntSlice(tmp))
+	for i := 0; i < 100; i++ {
+		if i != tmp[i] {
+			t.Fatal("invalid")
+		}
+	}
 }

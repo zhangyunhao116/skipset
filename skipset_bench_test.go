@@ -2,6 +2,7 @@ package skipset
 
 import (
 	"math"
+	"strconv"
 	"sync"
 	"testing"
 )
@@ -84,6 +85,43 @@ func BenchmarkContains50Hits(b *testing.B) {
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
 				_, _ = l.Load(int64(fastrandn(initsize * rate)))
+			}
+		})
+	})
+}
+
+func BenchmarkContainsNoHits(b *testing.B) {
+	b.Run("skipset", func(b *testing.B) {
+		l := NewInt64()
+		invalid := make([]int64, 0, initsize)
+		for i := 0; i < initsize*2; i++ {
+			if i%2 == 0 {
+				l.Insert(int64(i))
+			} else {
+				invalid = append(invalid, int64(i))
+			}
+		}
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				_ = l.Contains(invalid[fastrandn(uint32(len(invalid)))])
+			}
+		})
+	})
+	b.Run("sync.Map", func(b *testing.B) {
+		var l sync.Map
+		invalid := make([]int64, 0, initsize)
+		for i := 0; i < initsize*2; i++ {
+			if i%2 == 0 {
+				l.Store(int64(i), nil)
+			} else {
+				invalid = append(invalid, int64(i))
+			}
+		}
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				_, _ = l.Load(invalid[fastrandn(uint32(len(invalid)))])
 			}
 		})
 	})
@@ -235,6 +273,180 @@ func Benchmark1Range9Delete90Insert900Contains(b *testing.B) {
 					l.Store(fastrandn(randN), nil)
 				} else {
 					l.Load(fastrandn(randN))
+				}
+			}
+		})
+	})
+}
+
+func BenchmarkStringInsert(b *testing.B) {
+	b.Run("skipset", func(b *testing.B) {
+		l := NewString()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				l.Insert(strconv.Itoa(int(fastrand())))
+			}
+		})
+	})
+	b.Run("sync.Map", func(b *testing.B) {
+		var l sync.Map
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				l.Store(strconv.Itoa(int(fastrand())), nil)
+			}
+		})
+	})
+}
+
+func BenchmarkStringContains50Hits(b *testing.B) {
+	const rate = 2
+	b.Run("skipset", func(b *testing.B) {
+		l := NewString()
+		for i := 0; i < initsize*rate; i++ {
+			if fastrandn(rate) == 0 {
+				l.Insert(strconv.Itoa(i))
+			}
+		}
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				_ = l.Contains(strconv.Itoa(int(fastrandn(initsize * rate))))
+			}
+		})
+	})
+	b.Run("sync.Map", func(b *testing.B) {
+		var l sync.Map
+		for i := 0; i < initsize*rate; i++ {
+			if fastrandn(rate) == 0 {
+				l.Store(strconv.Itoa(i), nil)
+			}
+		}
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				_, _ = l.Load(strconv.Itoa(int(fastrandn(initsize * rate))))
+			}
+		})
+	})
+}
+
+func BenchmarkString30Insert70Contains(b *testing.B) {
+	b.Run("skipset", func(b *testing.B) {
+		l := NewString()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				u := fastrandn(10)
+				if u < 3 {
+					l.Insert(strconv.Itoa(int(fastrandn(randN))))
+				} else {
+					l.Contains(strconv.Itoa(int(fastrandn(randN))))
+				}
+			}
+		})
+	})
+	b.Run("sync.Map", func(b *testing.B) {
+		var l sync.Map
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				u := fastrandn(10)
+				if u < 3 {
+					l.Store(strconv.Itoa(int(fastrandn(randN))), nil)
+				} else {
+					l.Load(strconv.Itoa(int(fastrandn(randN))))
+				}
+			}
+		})
+	})
+}
+
+func BenchmarkString1Delete9Insert90Contains(b *testing.B) {
+	b.Run("skipset", func(b *testing.B) {
+		l := NewString()
+		for i := 0; i < initsize; i++ {
+			l.Insert(strconv.Itoa(i))
+		}
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				u := fastrandn(100)
+				if u == 1 {
+					l.Insert(strconv.Itoa(int(fastrandn(randN))))
+				} else if u == 2 {
+					l.Delete(strconv.Itoa(int(fastrandn(randN))))
+				} else {
+					l.Contains(strconv.Itoa(int(fastrandn(randN))))
+				}
+			}
+		})
+	})
+	b.Run("sync.Map", func(b *testing.B) {
+		var l sync.Map
+		for i := 0; i < initsize; i++ {
+			l.Store(strconv.Itoa(i), nil)
+		}
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				u := fastrandn(100)
+				if u == 1 {
+					l.Store(strconv.Itoa(int(fastrandn(randN))), nil)
+				} else if u == 2 {
+					l.Delete(strconv.Itoa(int(fastrandn(randN))))
+				} else {
+					l.Load(strconv.Itoa(int(fastrandn(randN))))
+				}
+			}
+		})
+	})
+}
+
+func BenchmarkString1Range9Delete90Insert900Contains(b *testing.B) {
+	b.Run("skipset", func(b *testing.B) {
+		l := NewString()
+		for i := 0; i < initsize; i++ {
+			l.Insert(strconv.Itoa(i))
+		}
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				u := fastrandn(1000)
+				if u == 0 {
+					l.Range(func(i int, score string) bool {
+						return true
+					})
+				} else if u > 10 && u < 20 {
+					l.Delete(strconv.Itoa(int(fastrandn(randN))))
+				} else if u >= 100 && u < 190 {
+					l.Insert(strconv.Itoa(int(fastrandn(randN))))
+				} else {
+					l.Contains(strconv.Itoa(int(fastrandn(randN))))
+				}
+			}
+		})
+	})
+	b.Run("sync.Map", func(b *testing.B) {
+		var l sync.Map
+		for i := 0; i < initsize; i++ {
+			l.Store(strconv.Itoa(i), nil)
+		}
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				u := fastrandn(1000)
+				if u == 0 {
+					l.Range(func(key, value interface{}) bool {
+						return true
+					})
+				} else if u > 10 && u < 20 {
+					l.Delete(strconv.Itoa(int(fastrandn(randN))))
+				} else if u >= 100 && u < 190 {
+					l.Store(strconv.Itoa(int(fastrandn(randN))), nil)
+				} else {
+					l.Load(strconv.Itoa(int(fastrandn(randN))))
 				}
 			}
 		})

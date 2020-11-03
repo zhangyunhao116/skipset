@@ -1,7 +1,7 @@
 package skipset
 
 import (
-	_ "unsafe" // for runtime.fastrand
+	_ "unsafe" // for linkname
 )
 
 const (
@@ -11,6 +11,9 @@ const (
 
 //go:linkname fastrand runtime.fastrand
 func fastrand() uint32
+
+//go:linkname cmpstring runtime.cmpstring
+func cmpstring(a, b string) int
 
 //go:nosplit
 func fastrandn(n uint32) uint32 {

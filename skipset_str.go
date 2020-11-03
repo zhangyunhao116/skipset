@@ -191,7 +191,6 @@ func (s *StringSet) Contains(val string) bool {
 		}
 
 		// Check if the score already in the skip list.
-		nex = x.loadNext(i)
 		if nex != s.tail && nex.cmp(score, val) == 0 {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}

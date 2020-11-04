@@ -10,11 +10,25 @@ Different from the sync.Map, the items in the skipset are always sorted, and the
 
 
 
-## Feature
+## Features
 
 - Concurrent safe API with high-performance.
-- Wait-free Contains and Range methods.
+- Wait-free Contains and Range operations.
 - Sorted items.
+
+
+
+## When should you use skipset
+
+In these situations, `skipset` is better
+
+- **Sorted elements is needed**.
+- **Concurrent calls multiple operations**. such as use both `Contains` and `Insert` at the same time.
+- **Memory intensive**. The skipset save at least 50% memory in the benchmark.
+
+In these situations, `sync.Map` is better
+
+- Insert a batch of elements and then use only `Contains` (use built-in map is even better)
 
 
 

@@ -30,12 +30,12 @@ func newInt64Node(score int64, level int) *int64Node {
 	}
 }
 
-// return n.next[i]
+// loadNext return `n.next[i]`(atomic)
 func (n *int64Node) loadNext(i int) *int64Node {
 	return (*int64Node)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i]))))
 }
 
-// n.next[i] = val
+// storeNext same with `n.next[i] = val`(atomic)
 func (n *int64Node) storeNext(i int, val *int64Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
 }

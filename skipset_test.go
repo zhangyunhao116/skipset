@@ -220,7 +220,7 @@ func TestNewString(t *testing.T) {
 		tmp = append(tmp, res)
 		return true
 	})
-	sort.Sort(sort.IntSlice(tmp))
+	sort.Ints(tmp)
 	for i := 0; i < 100; i++ {
 		if i != tmp[i] {
 			t.Fatal("invalid")

@@ -261,23 +261,19 @@ func (s *StringSet) Delete(score string) bool {
 	}
 }
 
-// Range calls f sequentially for each i and score present in the skip set.
+// Range calls f sequentially for each val present in the skip set.
 // If f returns false, range stops the iteration.
-func (s *StringSet) Range(f func(i int, val string) bool) {
-	var (
-		i int
-		x = s.header.loadNext(0)
-	)
+func (s *StringSet) Range(f func(val string) bool) {
+	x := s.header.loadNext(0)
 	for x != s.tail {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
-		if !f(i, x.val) {
+		if !f(x.val) {
 			break
 		}
 		x = x.loadNext(0)
-		i++
 	}
 }
 

@@ -28,12 +28,12 @@ func newFloat32Node(score float32, level int) *float32Node {
 	}
 }
 
-// return n.next[i]
+// loadNext return `n.next[i]`(atomic)
 func (n *float32Node) loadNext(i int) *float32Node {
 	return (*float32Node)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i]))))
 }
 
-// n.next[i] = val
+// storeNext same with `n.next[i] = val`(atomic)
 func (n *float32Node) storeNext(i int, val *float32Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
 }
@@ -77,7 +77,6 @@ func (s *Float32Set) findNodeDelete(score float32, preds *[maxLevel]*float32Node
 // findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
 func (s *Float32Set) findNodeInsert(score float32, preds *[maxLevel]*float32Node, succs *[maxLevel]*float32Node) int {
-	// lFound represents the index of the first layer at which it found a node.
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
@@ -246,23 +245,19 @@ func (s *Float32Set) Delete(score float32) bool {
 	}
 }
 
-// Range calls f sequentially for each i and score present in the skip set.
+// Range calls f sequentially for each score present in the skip set.
 // If f returns false, range stops the iteration.
-func (s *Float32Set) Range(f func(i int, score float32) bool) {
-	var (
-		i int
-		x = s.header.loadNext(0)
-	)
+func (s *Float32Set) Range(f func(score float32) bool) {
+	x := s.header.loadNext(0)
 	for x != s.tail {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
-		if !f(i, x.score) {
+		if !f(x.score) {
 			break
 		}
 		x = x.loadNext(0)
-		i++
 	}
 }
 
@@ -294,12 +289,12 @@ func newFloat64Node(score float64, level int) *float64Node {
 	}
 }
 
-// return n.next[i]
+// loadNext return `n.next[i]`(atomic)
 func (n *float64Node) loadNext(i int) *float64Node {
 	return (*float64Node)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i]))))
 }
 
-// n.next[i] = val
+// storeNext same with `n.next[i] = val`(atomic)
 func (n *float64Node) storeNext(i int, val *float64Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
 }
@@ -343,7 +338,6 @@ func (s *Float64Set) findNodeDelete(score float64, preds *[maxLevel]*float64Node
 // findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
 func (s *Float64Set) findNodeInsert(score float64, preds *[maxLevel]*float64Node, succs *[maxLevel]*float64Node) int {
-	// lFound represents the index of the first layer at which it found a node.
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
@@ -512,23 +506,19 @@ func (s *Float64Set) Delete(score float64) bool {
 	}
 }
 
-// Range calls f sequentially for each i and score present in the skip set.
+// Range calls f sequentially for each score present in the skip set.
 // If f returns false, range stops the iteration.
-func (s *Float64Set) Range(f func(i int, score float64) bool) {
-	var (
-		i int
-		x = s.header.loadNext(0)
-	)
+func (s *Float64Set) Range(f func(score float64) bool) {
+	x := s.header.loadNext(0)
 	for x != s.tail {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
-		if !f(i, x.score) {
+		if !f(x.score) {
 			break
 		}
 		x = x.loadNext(0)
-		i++
 	}
 }
 
@@ -560,12 +550,12 @@ func newInt32Node(score int32, level int) *int32Node {
 	}
 }
 
-// return n.next[i]
+// loadNext return `n.next[i]`(atomic)
 func (n *int32Node) loadNext(i int) *int32Node {
 	return (*int32Node)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i]))))
 }
 
-// n.next[i] = val
+// storeNext same with `n.next[i] = val`(atomic)
 func (n *int32Node) storeNext(i int, val *int32Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
 }
@@ -609,7 +599,6 @@ func (s *Int32Set) findNodeDelete(score int32, preds *[maxLevel]*int32Node, succ
 // findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
 func (s *Int32Set) findNodeInsert(score int32, preds *[maxLevel]*int32Node, succs *[maxLevel]*int32Node) int {
-	// lFound represents the index of the first layer at which it found a node.
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
@@ -778,23 +767,19 @@ func (s *Int32Set) Delete(score int32) bool {
 	}
 }
 
-// Range calls f sequentially for each i and score present in the skip set.
+// Range calls f sequentially for each score present in the skip set.
 // If f returns false, range stops the iteration.
-func (s *Int32Set) Range(f func(i int, score int32) bool) {
-	var (
-		i int
-		x = s.header.loadNext(0)
-	)
+func (s *Int32Set) Range(f func(score int32) bool) {
+	x := s.header.loadNext(0)
 	for x != s.tail {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
-		if !f(i, x.score) {
+		if !f(x.score) {
 			break
 		}
 		x = x.loadNext(0)
-		i++
 	}
 }
 
@@ -826,12 +811,12 @@ func newIntNode(score int, level int) *intNode {
 	}
 }
 
-// return n.next[i]
+// loadNext return `n.next[i]`(atomic)
 func (n *intNode) loadNext(i int) *intNode {
 	return (*intNode)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i]))))
 }
 
-// n.next[i] = val
+// storeNext same with `n.next[i] = val`(atomic)
 func (n *intNode) storeNext(i int, val *intNode) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
 }
@@ -875,7 +860,6 @@ func (s *IntSet) findNodeDelete(score int, preds *[maxLevel]*intNode, succs *[ma
 // findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
 func (s *IntSet) findNodeInsert(score int, preds *[maxLevel]*intNode, succs *[maxLevel]*intNode) int {
-	// lFound represents the index of the first layer at which it found a node.
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
@@ -1044,23 +1028,19 @@ func (s *IntSet) Delete(score int) bool {
 	}
 }
 
-// Range calls f sequentially for each i and score present in the skip set.
+// Range calls f sequentially for each score present in the skip set.
 // If f returns false, range stops the iteration.
-func (s *IntSet) Range(f func(i int, score int) bool) {
-	var (
-		i int
-		x = s.header.loadNext(0)
-	)
+func (s *IntSet) Range(f func(score int) bool) {
+	x := s.header.loadNext(0)
 	for x != s.tail {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
-		if !f(i, x.score) {
+		if !f(x.score) {
 			break
 		}
 		x = x.loadNext(0)
-		i++
 	}
 }
 
@@ -1092,12 +1072,12 @@ func newUint32Node(score uint32, level int) *uint32Node {
 	}
 }
 
-// return n.next[i]
+// loadNext return `n.next[i]`(atomic)
 func (n *uint32Node) loadNext(i int) *uint32Node {
 	return (*uint32Node)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i]))))
 }
 
-// n.next[i] = val
+// storeNext same with `n.next[i] = val`(atomic)
 func (n *uint32Node) storeNext(i int, val *uint32Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
 }
@@ -1141,7 +1121,6 @@ func (s *Uint32Set) findNodeDelete(score uint32, preds *[maxLevel]*uint32Node, s
 // findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
 func (s *Uint32Set) findNodeInsert(score uint32, preds *[maxLevel]*uint32Node, succs *[maxLevel]*uint32Node) int {
-	// lFound represents the index of the first layer at which it found a node.
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
@@ -1310,23 +1289,19 @@ func (s *Uint32Set) Delete(score uint32) bool {
 	}
 }
 
-// Range calls f sequentially for each i and score present in the skip set.
+// Range calls f sequentially for each score present in the skip set.
 // If f returns false, range stops the iteration.
-func (s *Uint32Set) Range(f func(i int, score uint32) bool) {
-	var (
-		i int
-		x = s.header.loadNext(0)
-	)
+func (s *Uint32Set) Range(f func(score uint32) bool) {
+	x := s.header.loadNext(0)
 	for x != s.tail {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
-		if !f(i, x.score) {
+		if !f(x.score) {
 			break
 		}
 		x = x.loadNext(0)
-		i++
 	}
 }
 
@@ -1358,12 +1333,12 @@ func newUint64Node(score uint64, level int) *uint64Node {
 	}
 }
 
-// return n.next[i]
+// loadNext return `n.next[i]`(atomic)
 func (n *uint64Node) loadNext(i int) *uint64Node {
 	return (*uint64Node)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i]))))
 }
 
-// n.next[i] = val
+// storeNext same with `n.next[i] = val`(atomic)
 func (n *uint64Node) storeNext(i int, val *uint64Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
 }
@@ -1407,7 +1382,6 @@ func (s *Uint64Set) findNodeDelete(score uint64, preds *[maxLevel]*uint64Node, s
 // findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
 func (s *Uint64Set) findNodeInsert(score uint64, preds *[maxLevel]*uint64Node, succs *[maxLevel]*uint64Node) int {
-	// lFound represents the index of the first layer at which it found a node.
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
@@ -1576,23 +1550,19 @@ func (s *Uint64Set) Delete(score uint64) bool {
 	}
 }
 
-// Range calls f sequentially for each i and score present in the skip set.
+// Range calls f sequentially for each score present in the skip set.
 // If f returns false, range stops the iteration.
-func (s *Uint64Set) Range(f func(i int, score uint64) bool) {
-	var (
-		i int
-		x = s.header.loadNext(0)
-	)
+func (s *Uint64Set) Range(f func(score uint64) bool) {
+	x := s.header.loadNext(0)
 	for x != s.tail {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
-		if !f(i, x.score) {
+		if !f(x.score) {
 			break
 		}
 		x = x.loadNext(0)
-		i++
 	}
 }
 
@@ -1624,12 +1594,12 @@ func newUintNode(score uint, level int) *uintNode {
 	}
 }
 
-// return n.next[i]
+// loadNext return `n.next[i]`(atomic)
 func (n *uintNode) loadNext(i int) *uintNode {
 	return (*uintNode)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i]))))
 }
 
-// n.next[i] = val
+// storeNext same with `n.next[i] = val`(atomic)
 func (n *uintNode) storeNext(i int, val *uintNode) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
 }
@@ -1673,7 +1643,6 @@ func (s *UintSet) findNodeDelete(score uint, preds *[maxLevel]*uintNode, succs *
 // findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
 func (s *UintSet) findNodeInsert(score uint, preds *[maxLevel]*uintNode, succs *[maxLevel]*uintNode) int {
-	// lFound represents the index of the first layer at which it found a node.
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
@@ -1842,23 +1811,19 @@ func (s *UintSet) Delete(score uint) bool {
 	}
 }
 
-// Range calls f sequentially for each i and score present in the skip set.
+// Range calls f sequentially for each score present in the skip set.
 // If f returns false, range stops the iteration.
-func (s *UintSet) Range(f func(i int, score uint) bool) {
-	var (
-		i int
-		x = s.header.loadNext(0)
-	)
+func (s *UintSet) Range(f func(score uint) bool) {
+	x := s.header.loadNext(0)
 	for x != s.tail {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
-		if !f(i, x.score) {
+		if !f(x.score) {
 			break
 		}
 		x = x.loadNext(0)
-		i++
 	}
 }
 

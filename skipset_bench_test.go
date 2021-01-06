@@ -241,7 +241,7 @@ func Benchmark1Range9Delete90Insert900Contains(b *testing.B) {
 			for pb.Next() {
 				u := fastrandn(1000)
 				if u == 0 {
-					l.Range(func(i int, score int64) bool {
+					l.Range(func(score int64) bool {
 						return true
 					})
 				} else if u > 10 && u < 20 {
@@ -373,9 +373,9 @@ func BenchmarkString1Delete9Insert90Contains(b *testing.B) {
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
 				u := fastrandn(100)
-				if u == 1 {
+				if u < 9 {
 					l.Insert(strconv.Itoa(int(fastrandn(randN))))
-				} else if u == 2 {
+				} else if u == 10 {
 					l.Delete(strconv.Itoa(int(fastrandn(randN))))
 				} else {
 					l.Contains(strconv.Itoa(int(fastrandn(randN))))
@@ -392,9 +392,9 @@ func BenchmarkString1Delete9Insert90Contains(b *testing.B) {
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
 				u := fastrandn(100)
-				if u == 1 {
+				if u < 9 {
 					l.Store(strconv.Itoa(int(fastrandn(randN))), nil)
-				} else if u == 2 {
+				} else if u == 10 {
 					l.Delete(strconv.Itoa(int(fastrandn(randN))))
 				} else {
 					l.Load(strconv.Itoa(int(fastrandn(randN))))
@@ -415,7 +415,7 @@ func BenchmarkString1Range9Delete90Insert900Contains(b *testing.B) {
 			for pb.Next() {
 				u := fastrandn(1000)
 				if u == 0 {
-					l.Range(func(i int, score string) bool {
+					l.Range(func(score string) bool {
 						return true
 					})
 				} else if u > 10 && u < 20 {

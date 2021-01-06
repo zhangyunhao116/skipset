@@ -79,7 +79,6 @@ func (s *Int64Set) findNodeDelete(score int64, preds *[maxLevel]*int64Node, succ
 // findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
 func (s *Int64Set) findNodeInsert(score int64, preds *[maxLevel]*int64Node, succs *[maxLevel]*int64Node) int {
-	// lFound represents the index of the first layer at which it found a node.
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
@@ -248,23 +247,19 @@ func (s *Int64Set) Delete(score int64) bool {
 	}
 }
 
-// Range calls f sequentially for each i and score present in the skip set.
+// Range calls f sequentially for each score present in the skip set.
 // If f returns false, range stops the iteration.
-func (s *Int64Set) Range(f func(i int, score int64) bool) {
-	var (
-		i int
-		x = s.header.loadNext(0)
-	)
+func (s *Int64Set) Range(f func(score int64) bool) {
+	x := s.header.loadNext(0)
 	for x != s.tail {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
-		if !f(i, x.score) {
+		if !f(x.score) {
 			break
 		}
 		x = x.loadNext(0)
-		i++
 	}
 }
 

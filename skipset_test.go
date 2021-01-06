@@ -22,7 +22,7 @@ func Example() {
 		fmt.Println("skipset contains 10")
 	}
 
-	l.Range(func(i int, score int) bool {
+	l.Range(func(score int) bool {
 		fmt.Println("skipset range found ", score)
 		return true
 	})
@@ -61,7 +61,8 @@ func TestNewInt64(t *testing.T) {
 		t.Fatal("invalid insert")
 	}
 
-	l.Range(func(i int, score int64) bool {
+	var i int
+	l.Range(func(score int64) bool {
 		if i == 0 && score != 20 {
 			t.Fatal("invalid range")
 		}
@@ -71,6 +72,7 @@ func TestNewInt64(t *testing.T) {
 		if i == 2 && score != 22 {
 			t.Fatal("invalid range")
 		}
+		i++
 		return true
 	})
 
@@ -78,13 +80,15 @@ func TestNewInt64(t *testing.T) {
 		t.Fatal("invalid delete")
 	}
 
-	l.Range(func(i int, score int64) bool {
+	i = 0
+	l.Range(func(score int64) bool {
 		if i == 0 && score != 20 {
 			t.Fatal("invalid range")
 		}
 		if i == 1 && score != 22 {
 			t.Fatal("invalid range")
 		}
+		i++
 		return true
 	})
 
@@ -167,7 +171,7 @@ func TestNewInt64(t *testing.T) {
 			} else if r != 999 {
 				l.Delete(int64(fastrandn(smallRndN)) + 1)
 			} else {
-				l.Range(func(i int, score int64) bool {
+				l.Range(func(score int64) bool {
 					if score == 0 { // default header and tail score
 						panic("invalid content")
 					}
@@ -215,7 +219,7 @@ func TestNewString(t *testing.T) {
 	wg.Wait()
 
 	tmp := make([]int, 0, 100)
-	x.Range(func(i int, val string) bool {
+	x.Range(func(val string) bool {
 		res, _ := strconv.Atoi(val)
 		tmp = append(tmp, res)
 		return true

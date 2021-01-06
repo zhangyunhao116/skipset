@@ -49,7 +49,7 @@ if l.Contains(10) {
 	fmt.Println("skipset contains 10")
 }
 
-l.Range(func(i int, score int) bool {
+l.Range(func(score int) bool {
 	fmt.Println("skipset range found ", score)
 	return true
 })
@@ -69,6 +69,8 @@ CPU: AMD 3700x(8C16T), running at 3.6GHz
 OS: ubuntu 18.04
 
 MEMORY: 16G x 2 (3200MHz)
+
+**lower is better**
 
 ```shell
 $ go test -run=NOTEST -bench=. -benchtime=100000x -benchmem -count=10 -timeout=60m  > x.txt

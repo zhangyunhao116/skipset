@@ -790,6 +790,267 @@ func (s *Int32Set) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
 
+// Int16Set represents a set based on skip list in ascending order.
+type Int16Set struct {
+	header *int16Node
+	tail   *int16Node
+	length int64
+}
+
+type int16Node struct {
+	score int16
+	next  []*int16Node
+	mu    sync.Mutex
+	flags bitflag
+}
+
+func newInt16Node(score int16, level int) *int16Node {
+	return &int16Node{
+		score: score,
+		next:  make([]*int16Node, level),
+	}
+}
+
+// loadNext return `n.next[i]`(atomic)
+func (n *int16Node) loadNext(i int) *int16Node {
+	return (*int16Node)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i]))))
+}
+
+// storeNext same with `n.next[i] = val`(atomic)
+func (n *int16Node) storeNext(i int, val *int16Node) {
+	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
+}
+
+// NewInt16 return an empty int16 skip set.
+func NewInt16() *Int16Set {
+	h, t := newInt16Node(0, maxLevel), newInt16Node(0, maxLevel)
+	for i := 0; i < maxLevel; i++ {
+		h.next[i] = t
+	}
+	h.flags.SetTrue(fullyLinked)
+	t.flags.SetTrue(fullyLinked)
+	return &Int16Set{
+		header: h,
+		tail:   t,
+	}
+}
+
+// findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
+// The returned preds and succs always satisfy preds[i] > score >= succs[i].
+func (s *Int16Set) findNodeDelete(score int16, preds *[maxLevel]*int16Node, succs *[maxLevel]*int16Node) int {
+	// lFound represents the index of the first layer at which it found a node.
+	lFound, x := -1, s.header
+	for i := maxLevel - 1; i >= 0; i-- {
+		succ := x.loadNext(i)
+		for succ != s.tail && succ.score < score {
+			x = succ
+			succ = x.loadNext(i)
+		}
+		preds[i] = x
+		succs[i] = succ
+
+		// Check if the score already in the skip list.
+		if lFound == -1 && succ != s.tail && score == succ.score {
+			lFound = i
+		}
+	}
+	return lFound
+}
+
+// findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
+// The returned preds and succs always satisfy preds[i] > score > succs[i].
+func (s *Int16Set) findNodeInsert(score int16, preds *[maxLevel]*int16Node, succs *[maxLevel]*int16Node) int {
+	x := s.header
+	for i := maxLevel - 1; i >= 0; i-- {
+		succ := x.loadNext(i)
+		for succ != s.tail && succ.score < score {
+			x = succ
+			succ = x.loadNext(i)
+		}
+		preds[i] = x
+		succs[i] = succ
+
+		// Check if the score already in the skip list.
+		if succ != s.tail && score == succ.score {
+			return i
+		}
+	}
+	return -1
+}
+
+func unlockInt16(preds [maxLevel]*int16Node, highestLevel int) {
+	var prevPred *int16Node
+	for i := highestLevel; i >= 0; i-- {
+		if preds[i] != prevPred { // the node could be unlocked by previous loop
+			preds[i].mu.Unlock()
+			prevPred = preds[i]
+		}
+	}
+}
+
+// Insert insert the score into skip set, return true if this process insert the score into skip set,
+// return false if this process can't insert this score, because another process has insert the same score.
+//
+// If the score is in the skip set but not fully linked, this process will wait until it is.
+func (s *Int16Set) Insert(score int16) bool {
+	level := randomLevel()
+	var preds, succs [maxLevel]*int16Node
+	for {
+		lFound := s.findNodeInsert(score, &preds, &succs)
+		if lFound != -1 { // indicating the score is already in the skip-list
+			nodeFound := succs[lFound]
+			if !nodeFound.flags.Get(marked) {
+				for !nodeFound.flags.Get(fullyLinked) {
+					// The node is not yet fully linked, just waits until it is.
+				}
+				return false
+			}
+			// If the node is marked, represents some other thread is in the process of deleting this node,
+			// we need to add this node in next loop.
+			continue
+		}
+
+		// Add this node into skip list.
+		var (
+			highestLocked        = -1 // the highest level being locked by this process
+			valid                = true
+			pred, succ, prevPred *int16Node
+		)
+		for layer := 0; valid && layer < level; layer++ {
+			pred = preds[layer]   // target node's previous node
+			succ = succs[layer]   // target node's next node
+			if pred != prevPred { // the node in this layer could be locked by previous loop
+				pred.mu.Lock()
+				highestLocked = layer
+				prevPred = pred
+			}
+			// valid check if there is another node has inserted into the skip list in this layer during this process.
+			// It is valid if:
+			// 1. The previous node and next node both are not marked.
+			// 2. The previous node's next node is succ in this layer.
+			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
+		}
+		if !valid {
+			unlockInt16(preds, highestLocked)
+			continue
+		}
+
+		nn := newInt16Node(score, level)
+		for layer := 0; layer < level; layer++ {
+			nn.next[layer] = succs[layer]
+			preds[layer].storeNext(layer, nn)
+		}
+		nn.flags.SetTrue(fullyLinked)
+		unlockInt16(preds, highestLocked)
+		atomic.AddInt64(&s.length, 1)
+		return true
+	}
+}
+
+// Contains check if the score is in the skip set.
+func (s *Int16Set) Contains(score int16) bool {
+	x := s.header
+	for i := maxLevel - 1; i >= 0; i-- {
+		nex := x.loadNext(i)
+		for nex != s.tail && nex.score < score {
+			x = nex
+			nex = x.loadNext(i)
+		}
+
+		// Check if the score already in the skip list.
+		if nex != s.tail && score == nex.score {
+			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
+		}
+	}
+	return false
+}
+
+// Delete a node from the skip set.
+func (s *Int16Set) Delete(score int16) bool {
+	var (
+		nodeToDelete *int16Node
+		isMarked     bool // represents if this operation mark the node
+		topLayer     = -1
+		preds, succs [maxLevel]*int16Node
+	)
+	for {
+		lFound := s.findNodeDelete(score, &preds, &succs)
+		if isMarked || // this process mark this node or we can find this node in the skip list
+			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
+			if !isMarked { // we don't mark this node for now
+				nodeToDelete = succs[lFound]
+				topLayer = lFound
+				nodeToDelete.mu.Lock()
+				if nodeToDelete.flags.Get(marked) {
+					// The node is marked by another process,
+					// the physical deletion will be accomplished by another process.
+					nodeToDelete.mu.Unlock()
+					return false
+				}
+				nodeToDelete.flags.SetTrue(marked)
+				isMarked = true
+			}
+			// Accomplish the physical deletion.
+			var (
+				highestLocked        = -1 // the highest level being locked by this process
+				valid                = true
+				pred, succ, prevPred *int16Node
+			)
+			for layer := 0; valid && (layer <= topLayer); layer++ {
+				pred, succ = preds[layer], succs[layer]
+				if pred != prevPred { // the node in this layer could be locked by previous loop
+					pred.mu.Lock()
+					highestLocked = layer
+					prevPred = pred
+				}
+				// valid check if there is another node has inserted into the skip list in this layer
+				// during this process, or the previous is deleted by another process.
+				// It is valid if:
+				// 1. the previous node exists.
+				// 2. no another node has inserted into the skip list in this layer.
+				valid = !pred.flags.Get(marked) && pred.loadNext(layer) == succ
+			}
+			if !valid {
+				unlockInt16(preds, highestLocked)
+				continue
+			}
+			for i := topLayer; i >= 0; i-- {
+				// Now we own the `nodeToDelete`, no other goroutine will modify it.
+				// So we don't need `nodeToDelete.loadNext`
+				preds[i].storeNext(i, nodeToDelete.next[i])
+			}
+			nodeToDelete.mu.Unlock()
+			unlockInt16(preds, highestLocked)
+			atomic.AddInt64(&s.length, -1)
+			return true
+		}
+		return false
+	}
+}
+
+// Range calls f sequentially for each score present in the skip set.
+// If f returns false, range stops the iteration.
+func (s *Int16Set) Range(f func(score int16) bool) {
+	x := s.header.loadNext(0)
+	for x != s.tail {
+		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
+			x = x.loadNext(0)
+			continue
+		}
+		if !f(x.score) {
+			break
+		}
+		x = x.loadNext(0)
+	}
+}
+
+// Len return the length of this skip set.
+// Keep in sync with types_gen.go:lengthFunction
+// Special case for code generation, Must in the tail of skipset.go.
+func (s *Int16Set) Len() int {
+	return int(atomic.LoadInt64(&s.length))
+}
+
 // IntSet represents a set based on skip list in ascending order.
 type IntSet struct {
 	header *intNode
@@ -1048,6 +1309,267 @@ func (s *IntSet) Range(f func(score int) bool) {
 // Keep in sync with types_gen.go:lengthFunction
 // Special case for code generation, Must in the tail of skipset.go.
 func (s *IntSet) Len() int {
+	return int(atomic.LoadInt64(&s.length))
+}
+
+// Uint64Set represents a set based on skip list in ascending order.
+type Uint64Set struct {
+	header *uint64Node
+	tail   *uint64Node
+	length int64
+}
+
+type uint64Node struct {
+	score uint64
+	next  []*uint64Node
+	mu    sync.Mutex
+	flags bitflag
+}
+
+func newUint64Node(score uint64, level int) *uint64Node {
+	return &uint64Node{
+		score: score,
+		next:  make([]*uint64Node, level),
+	}
+}
+
+// loadNext return `n.next[i]`(atomic)
+func (n *uint64Node) loadNext(i int) *uint64Node {
+	return (*uint64Node)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i]))))
+}
+
+// storeNext same with `n.next[i] = val`(atomic)
+func (n *uint64Node) storeNext(i int, val *uint64Node) {
+	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
+}
+
+// NewUint64 return an empty uint64 skip set.
+func NewUint64() *Uint64Set {
+	h, t := newUint64Node(0, maxLevel), newUint64Node(0, maxLevel)
+	for i := 0; i < maxLevel; i++ {
+		h.next[i] = t
+	}
+	h.flags.SetTrue(fullyLinked)
+	t.flags.SetTrue(fullyLinked)
+	return &Uint64Set{
+		header: h,
+		tail:   t,
+	}
+}
+
+// findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
+// The returned preds and succs always satisfy preds[i] > score >= succs[i].
+func (s *Uint64Set) findNodeDelete(score uint64, preds *[maxLevel]*uint64Node, succs *[maxLevel]*uint64Node) int {
+	// lFound represents the index of the first layer at which it found a node.
+	lFound, x := -1, s.header
+	for i := maxLevel - 1; i >= 0; i-- {
+		succ := x.loadNext(i)
+		for succ != s.tail && succ.score < score {
+			x = succ
+			succ = x.loadNext(i)
+		}
+		preds[i] = x
+		succs[i] = succ
+
+		// Check if the score already in the skip list.
+		if lFound == -1 && succ != s.tail && score == succ.score {
+			lFound = i
+		}
+	}
+	return lFound
+}
+
+// findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
+// The returned preds and succs always satisfy preds[i] > score > succs[i].
+func (s *Uint64Set) findNodeInsert(score uint64, preds *[maxLevel]*uint64Node, succs *[maxLevel]*uint64Node) int {
+	x := s.header
+	for i := maxLevel - 1; i >= 0; i-- {
+		succ := x.loadNext(i)
+		for succ != s.tail && succ.score < score {
+			x = succ
+			succ = x.loadNext(i)
+		}
+		preds[i] = x
+		succs[i] = succ
+
+		// Check if the score already in the skip list.
+		if succ != s.tail && score == succ.score {
+			return i
+		}
+	}
+	return -1
+}
+
+func unlockUint64(preds [maxLevel]*uint64Node, highestLevel int) {
+	var prevPred *uint64Node
+	for i := highestLevel; i >= 0; i-- {
+		if preds[i] != prevPred { // the node could be unlocked by previous loop
+			preds[i].mu.Unlock()
+			prevPred = preds[i]
+		}
+	}
+}
+
+// Insert insert the score into skip set, return true if this process insert the score into skip set,
+// return false if this process can't insert this score, because another process has insert the same score.
+//
+// If the score is in the skip set but not fully linked, this process will wait until it is.
+func (s *Uint64Set) Insert(score uint64) bool {
+	level := randomLevel()
+	var preds, succs [maxLevel]*uint64Node
+	for {
+		lFound := s.findNodeInsert(score, &preds, &succs)
+		if lFound != -1 { // indicating the score is already in the skip-list
+			nodeFound := succs[lFound]
+			if !nodeFound.flags.Get(marked) {
+				for !nodeFound.flags.Get(fullyLinked) {
+					// The node is not yet fully linked, just waits until it is.
+				}
+				return false
+			}
+			// If the node is marked, represents some other thread is in the process of deleting this node,
+			// we need to add this node in next loop.
+			continue
+		}
+
+		// Add this node into skip list.
+		var (
+			highestLocked        = -1 // the highest level being locked by this process
+			valid                = true
+			pred, succ, prevPred *uint64Node
+		)
+		for layer := 0; valid && layer < level; layer++ {
+			pred = preds[layer]   // target node's previous node
+			succ = succs[layer]   // target node's next node
+			if pred != prevPred { // the node in this layer could be locked by previous loop
+				pred.mu.Lock()
+				highestLocked = layer
+				prevPred = pred
+			}
+			// valid check if there is another node has inserted into the skip list in this layer during this process.
+			// It is valid if:
+			// 1. The previous node and next node both are not marked.
+			// 2. The previous node's next node is succ in this layer.
+			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
+		}
+		if !valid {
+			unlockUint64(preds, highestLocked)
+			continue
+		}
+
+		nn := newUint64Node(score, level)
+		for layer := 0; layer < level; layer++ {
+			nn.next[layer] = succs[layer]
+			preds[layer].storeNext(layer, nn)
+		}
+		nn.flags.SetTrue(fullyLinked)
+		unlockUint64(preds, highestLocked)
+		atomic.AddInt64(&s.length, 1)
+		return true
+	}
+}
+
+// Contains check if the score is in the skip set.
+func (s *Uint64Set) Contains(score uint64) bool {
+	x := s.header
+	for i := maxLevel - 1; i >= 0; i-- {
+		nex := x.loadNext(i)
+		for nex != s.tail && nex.score < score {
+			x = nex
+			nex = x.loadNext(i)
+		}
+
+		// Check if the score already in the skip list.
+		if nex != s.tail && score == nex.score {
+			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
+		}
+	}
+	return false
+}
+
+// Delete a node from the skip set.
+func (s *Uint64Set) Delete(score uint64) bool {
+	var (
+		nodeToDelete *uint64Node
+		isMarked     bool // represents if this operation mark the node
+		topLayer     = -1
+		preds, succs [maxLevel]*uint64Node
+	)
+	for {
+		lFound := s.findNodeDelete(score, &preds, &succs)
+		if isMarked || // this process mark this node or we can find this node in the skip list
+			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
+			if !isMarked { // we don't mark this node for now
+				nodeToDelete = succs[lFound]
+				topLayer = lFound
+				nodeToDelete.mu.Lock()
+				if nodeToDelete.flags.Get(marked) {
+					// The node is marked by another process,
+					// the physical deletion will be accomplished by another process.
+					nodeToDelete.mu.Unlock()
+					return false
+				}
+				nodeToDelete.flags.SetTrue(marked)
+				isMarked = true
+			}
+			// Accomplish the physical deletion.
+			var (
+				highestLocked        = -1 // the highest level being locked by this process
+				valid                = true
+				pred, succ, prevPred *uint64Node
+			)
+			for layer := 0; valid && (layer <= topLayer); layer++ {
+				pred, succ = preds[layer], succs[layer]
+				if pred != prevPred { // the node in this layer could be locked by previous loop
+					pred.mu.Lock()
+					highestLocked = layer
+					prevPred = pred
+				}
+				// valid check if there is another node has inserted into the skip list in this layer
+				// during this process, or the previous is deleted by another process.
+				// It is valid if:
+				// 1. the previous node exists.
+				// 2. no another node has inserted into the skip list in this layer.
+				valid = !pred.flags.Get(marked) && pred.loadNext(layer) == succ
+			}
+			if !valid {
+				unlockUint64(preds, highestLocked)
+				continue
+			}
+			for i := topLayer; i >= 0; i-- {
+				// Now we own the `nodeToDelete`, no other goroutine will modify it.
+				// So we don't need `nodeToDelete.loadNext`
+				preds[i].storeNext(i, nodeToDelete.next[i])
+			}
+			nodeToDelete.mu.Unlock()
+			unlockUint64(preds, highestLocked)
+			atomic.AddInt64(&s.length, -1)
+			return true
+		}
+		return false
+	}
+}
+
+// Range calls f sequentially for each score present in the skip set.
+// If f returns false, range stops the iteration.
+func (s *Uint64Set) Range(f func(score uint64) bool) {
+	x := s.header.loadNext(0)
+	for x != s.tail {
+		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
+			x = x.loadNext(0)
+			continue
+		}
+		if !f(x.score) {
+			break
+		}
+		x = x.loadNext(0)
+	}
+}
+
+// Len return the length of this skip set.
+// Keep in sync with types_gen.go:lengthFunction
+// Special case for code generation, Must in the tail of skipset.go.
+func (s *Uint64Set) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
 
@@ -1312,46 +1834,46 @@ func (s *Uint32Set) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
 
-// Uint64Set represents a set based on skip list in ascending order.
-type Uint64Set struct {
-	header *uint64Node
-	tail   *uint64Node
+// Uint16Set represents a set based on skip list in ascending order.
+type Uint16Set struct {
+	header *uint16Node
+	tail   *uint16Node
 	length int64
 }
 
-type uint64Node struct {
-	score uint64
-	next  []*uint64Node
+type uint16Node struct {
+	score uint16
+	next  []*uint16Node
 	mu    sync.Mutex
 	flags bitflag
 }
 
-func newUint64Node(score uint64, level int) *uint64Node {
-	return &uint64Node{
+func newUint16Node(score uint16, level int) *uint16Node {
+	return &uint16Node{
 		score: score,
-		next:  make([]*uint64Node, level),
+		next:  make([]*uint16Node, level),
 	}
 }
 
 // loadNext return `n.next[i]`(atomic)
-func (n *uint64Node) loadNext(i int) *uint64Node {
-	return (*uint64Node)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i]))))
+func (n *uint16Node) loadNext(i int) *uint16Node {
+	return (*uint16Node)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i]))))
 }
 
 // storeNext same with `n.next[i] = val`(atomic)
-func (n *uint64Node) storeNext(i int, val *uint64Node) {
+func (n *uint16Node) storeNext(i int, val *uint16Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
 }
 
-// NewUint64 return an empty uint64 skip set.
-func NewUint64() *Uint64Set {
-	h, t := newUint64Node(0, maxLevel), newUint64Node(0, maxLevel)
+// NewUint16 return an empty uint16 skip set.
+func NewUint16() *Uint16Set {
+	h, t := newUint16Node(0, maxLevel), newUint16Node(0, maxLevel)
 	for i := 0; i < maxLevel; i++ {
 		h.next[i] = t
 	}
 	h.flags.SetTrue(fullyLinked)
 	t.flags.SetTrue(fullyLinked)
-	return &Uint64Set{
+	return &Uint16Set{
 		header: h,
 		tail:   t,
 	}
@@ -1359,7 +1881,7 @@ func NewUint64() *Uint64Set {
 
 // findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
 // The returned preds and succs always satisfy preds[i] > score >= succs[i].
-func (s *Uint64Set) findNodeDelete(score uint64, preds *[maxLevel]*uint64Node, succs *[maxLevel]*uint64Node) int {
+func (s *Uint16Set) findNodeDelete(score uint16, preds *[maxLevel]*uint16Node, succs *[maxLevel]*uint16Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -1381,7 +1903,7 @@ func (s *Uint64Set) findNodeDelete(score uint64, preds *[maxLevel]*uint64Node, s
 
 // findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *Uint64Set) findNodeInsert(score uint64, preds *[maxLevel]*uint64Node, succs *[maxLevel]*uint64Node) int {
+func (s *Uint16Set) findNodeInsert(score uint16, preds *[maxLevel]*uint16Node, succs *[maxLevel]*uint16Node) int {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
@@ -1400,8 +1922,8 @@ func (s *Uint64Set) findNodeInsert(score uint64, preds *[maxLevel]*uint64Node, s
 	return -1
 }
 
-func unlockUint64(preds [maxLevel]*uint64Node, highestLevel int) {
-	var prevPred *uint64Node
+func unlockUint16(preds [maxLevel]*uint16Node, highestLevel int) {
+	var prevPred *uint16Node
 	for i := highestLevel; i >= 0; i-- {
 		if preds[i] != prevPred { // the node could be unlocked by previous loop
 			preds[i].mu.Unlock()
@@ -1414,9 +1936,9 @@ func unlockUint64(preds [maxLevel]*uint64Node, highestLevel int) {
 // return false if this process can't insert this score, because another process has insert the same score.
 //
 // If the score is in the skip set but not fully linked, this process will wait until it is.
-func (s *Uint64Set) Insert(score uint64) bool {
+func (s *Uint16Set) Insert(score uint16) bool {
 	level := randomLevel()
-	var preds, succs [maxLevel]*uint64Node
+	var preds, succs [maxLevel]*uint16Node
 	for {
 		lFound := s.findNodeInsert(score, &preds, &succs)
 		if lFound != -1 { // indicating the score is already in the skip-list
@@ -1436,7 +1958,7 @@ func (s *Uint64Set) Insert(score uint64) bool {
 		var (
 			highestLocked        = -1 // the highest level being locked by this process
 			valid                = true
-			pred, succ, prevPred *uint64Node
+			pred, succ, prevPred *uint16Node
 		)
 		for layer := 0; valid && layer < level; layer++ {
 			pred = preds[layer]   // target node's previous node
@@ -1453,24 +1975,24 @@ func (s *Uint64Set) Insert(score uint64) bool {
 			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
 		}
 		if !valid {
-			unlockUint64(preds, highestLocked)
+			unlockUint16(preds, highestLocked)
 			continue
 		}
 
-		nn := newUint64Node(score, level)
+		nn := newUint16Node(score, level)
 		for layer := 0; layer < level; layer++ {
 			nn.next[layer] = succs[layer]
 			preds[layer].storeNext(layer, nn)
 		}
 		nn.flags.SetTrue(fullyLinked)
-		unlockUint64(preds, highestLocked)
+		unlockUint16(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
 	}
 }
 
 // Contains check if the score is in the skip set.
-func (s *Uint64Set) Contains(score uint64) bool {
+func (s *Uint16Set) Contains(score uint16) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
@@ -1488,12 +2010,12 @@ func (s *Uint64Set) Contains(score uint64) bool {
 }
 
 // Delete a node from the skip set.
-func (s *Uint64Set) Delete(score uint64) bool {
+func (s *Uint16Set) Delete(score uint16) bool {
 	var (
-		nodeToDelete *uint64Node
+		nodeToDelete *uint16Node
 		isMarked     bool // represents if this operation mark the node
 		topLayer     = -1
-		preds, succs [maxLevel]*uint64Node
+		preds, succs [maxLevel]*uint16Node
 	)
 	for {
 		lFound := s.findNodeDelete(score, &preds, &succs)
@@ -1516,7 +2038,7 @@ func (s *Uint64Set) Delete(score uint64) bool {
 			var (
 				highestLocked        = -1 // the highest level being locked by this process
 				valid                = true
-				pred, succ, prevPred *uint64Node
+				pred, succ, prevPred *uint16Node
 			)
 			for layer := 0; valid && (layer <= topLayer); layer++ {
 				pred, succ = preds[layer], succs[layer]
@@ -1533,7 +2055,7 @@ func (s *Uint64Set) Delete(score uint64) bool {
 				valid = !pred.flags.Get(marked) && pred.loadNext(layer) == succ
 			}
 			if !valid {
-				unlockUint64(preds, highestLocked)
+				unlockUint16(preds, highestLocked)
 				continue
 			}
 			for i := topLayer; i >= 0; i-- {
@@ -1542,7 +2064,7 @@ func (s *Uint64Set) Delete(score uint64) bool {
 				preds[i].storeNext(i, nodeToDelete.next[i])
 			}
 			nodeToDelete.mu.Unlock()
-			unlockUint64(preds, highestLocked)
+			unlockUint16(preds, highestLocked)
 			atomic.AddInt64(&s.length, -1)
 			return true
 		}
@@ -1552,7 +2074,7 @@ func (s *Uint64Set) Delete(score uint64) bool {
 
 // Range calls f sequentially for each score present in the skip set.
 // If f returns false, range stops the iteration.
-func (s *Uint64Set) Range(f func(score uint64) bool) {
+func (s *Uint16Set) Range(f func(score uint16) bool) {
 	x := s.header.loadNext(0)
 	for x != s.tail {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
@@ -1569,7 +2091,7 @@ func (s *Uint64Set) Range(f func(score uint64) bool) {
 // Len return the length of this skip set.
 // Keep in sync with types_gen.go:lengthFunction
 // Special case for code generation, Must in the tail of skipset.go.
-func (s *Uint64Set) Len() int {
+func (s *Uint16Set) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
 

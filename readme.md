@@ -70,8 +70,6 @@ OS: ubuntu 18.04
 
 MEMORY: 16G x 2 (3200MHz)
 
-**lower is better**
-
 ```shell
 $ go test -run=NOTEST -bench=. -benchtime=100000x -benchmem -count=10 -timeout=60m  > x.txt
 $ benchstat x.txt

@@ -33,7 +33,7 @@ func Example() {
 
 func TestNewInt64(t *testing.T) {
 	// Correctness.
-	l := NewInt64()
+	l := NewInt()
 	if l.length != 0 {
 		t.Fatal("invalid length")
 	}
@@ -62,7 +62,7 @@ func TestNewInt64(t *testing.T) {
 	}
 
 	var i int
-	l.Range(func(score int64) bool {
+	l.Range(func(score int) bool {
 		if i == 0 && score != 20 {
 			t.Fatal("invalid range")
 		}
@@ -81,7 +81,7 @@ func TestNewInt64(t *testing.T) {
 	}
 
 	i = 0
-	l.Range(func(score int64) bool {
+	l.Range(func(score int) bool {
 		if i == 0 && score != 20 {
 			t.Fatal("invalid range")
 		}
@@ -95,12 +95,12 @@ func TestNewInt64(t *testing.T) {
 	const num = math.MaxInt16
 	// Make rand shuffle array.
 	// The testArray contains [1,num]
-	testArray := make([]int64, num)
+	testArray := make([]int, num)
 	testArray[0] = num + 1
 	for i := 1; i < num; i++ {
 		// We left 0, because it is the default score for head and tail.
 		// If we check the skipset contains 0, there must be something wrong.
-		testArray[i] = int64(i)
+		testArray[i] = int(i)
 	}
 	for i := len(testArray) - 1; i > 0; i-- { // Fisher–Yates shuffle
 		j := fastrandn(uint32(i + 1))
@@ -165,13 +165,13 @@ func TestNewInt64(t *testing.T) {
 		go func() {
 			r := fastrandn(num)
 			if r < 333 {
-				l.Insert(int64(fastrandn(smallRndN)) + 1)
+				l.Insert(int(fastrandn(smallRndN)) + 1)
 			} else if r < 666 {
-				l.Contains(int64(fastrandn(smallRndN)) + 1)
+				l.Contains(int(fastrandn(smallRndN)) + 1)
 			} else if r != 999 {
-				l.Delete(int64(fastrandn(smallRndN)) + 1)
+				l.Delete(int(fastrandn(smallRndN)) + 1)
 			} else {
-				l.Range(func(score int64) bool {
+				l.Range(func(score int) bool {
 					if score == 0 { // default header and tail score
 						panic("invalid content")
 					}

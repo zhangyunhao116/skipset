@@ -199,9 +199,9 @@ func Benchmark1Delete9Insert90Contains(b *testing.B) {
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
 				u := fastrandn(100)
-				if u == 1 {
+				if u < 9 {
 					l.Insert(int64(fastrandn(randN)))
-				} else if u == 2 {
+				} else if u == 10 {
 					l.Delete(int64(fastrandn(randN)))
 				} else {
 					l.Contains(int64(fastrandn(randN)))
@@ -218,9 +218,9 @@ func Benchmark1Delete9Insert90Contains(b *testing.B) {
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
 				u := fastrandn(100)
-				if u == 1 {
+				if u < 9 {
 					l.Store(int64(fastrandn(randN)), nil)
-				} else if u == 2 {
+				} else if u == 10 {
 					l.Delete(int64(fastrandn(randN)))
 				} else {
 					l.Load(int64(fastrandn(randN)))

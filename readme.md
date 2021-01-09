@@ -39,25 +39,36 @@ In these situations, `sync.Map` is better
 See [Go doc](https://godoc.org/github.com/ZYunH/skipset) for more information.
 
 ```go
-l := skipset.NewInt()
+package main
 
-for _, v := range []int{10, 12, 15} {
-	if l.Insert(v) {
-		fmt.Println("skipset insert", v)
+import (
+	"fmt"
+
+	"github.com/zhangyunhao116/skipset"
+)
+
+func main() {
+	l := skipset.NewInt()
+
+	for _, v := range []int{10, 12, 15} {
+		if l.Insert(v) {
+			fmt.Println("skipset insert", v)
+		}
 	}
+
+	if l.Contains(10) {
+		fmt.Println("skipset contains 10")
+	}
+
+	l.Range(func(score int) bool {
+		fmt.Println("skipset range found ", score)
+		return true
+	})
+
+	l.Delete(15)
+	fmt.Printf("skipset contains %d items\r\n", l.Len())
 }
 
-if l.Contains(10) {
-	fmt.Println("skipset contains 10")
-}
-
-l.Range(func(score int) bool {
-	fmt.Println("skipset range found ", score)
-	return true
-})
-
-l.Delete(15)
-fmt.Printf("skipset contains %d items\r\n", l.Len())
 ```
 
 

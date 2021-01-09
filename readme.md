@@ -1,4 +1,4 @@
-![LOGO](https://raw.githubusercontent.com/ZYunH/public-data/master/skipset-logo.png)
+![LOGO](https://raw.githubusercontent.com/ZYunH/public-data/master/skipset-logo2.png)
 
 ## Introduction
 
@@ -69,6 +69,8 @@ CPU: AMD 3700x(8C16T), running at 3.6GHz
 OS: ubuntu 18.04
 
 MEMORY: 16G x 2 (3200MHz)
+
+![benchmark](https://raw.githubusercontent.com/ZYunH/public-data/master/skipset-benchmark.png)
 
 ```shell
 $ go test -run=NOTEST -bench=. -benchtime=100000x -benchmem -count=10 -timeout=60m  > x.txt

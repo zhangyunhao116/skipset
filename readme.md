@@ -1,4 +1,6 @@
-![LOGO](https://raw.githubusercontent.com/ZYunH/public-data/master/skipset-logo2.png)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ZYunH/public-data/master/skipset-logo2.png"/>
+</p>
 
 ## Introduction
 

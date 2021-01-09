@@ -1,4 +1,4 @@
-module github.com/ZYunH/skipset
+module github.com/zhangyunhao116/skipset
 
 go 1.13
 

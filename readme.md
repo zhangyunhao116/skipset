@@ -30,7 +30,7 @@ In these situations, `skipset` is better
 
 In these situations, `sync.Map` is better
 
-- Insert a batch of elements and then use only `Contains` (use built-in map is even better)
+- Only one goroutine access the set for most of the time, such as insert a batch of elements and then use only `Contains` (use built-in map is even better).
 
 
 

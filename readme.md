@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/ZYunH/public-data/master/skipset-logo2.png"/>
+  <img src="https://raw.githubusercontent.com/zhangyunhao116/public-data/master/skipset-logo2.png"/>
 </p>
 
 ## Introduction
@@ -36,7 +36,7 @@ In these situations, `sync.Map` is better
 
 ## QuickStart
 
-See [Go doc](https://godoc.org/github.com/ZYunH/skipset) for more information.
+See [Go doc](https://godoc.org/github.com/zhangyunhao116/skipset) for more information.
 
 ```go
 package main
@@ -83,7 +83,7 @@ OS: ubuntu 18.04
 
 MEMORY: 16G x 2 (3200MHz)
 
-![benchmark](https://raw.githubusercontent.com/ZYunH/public-data/master/skipset-benchmark.png)
+![benchmark](https://raw.githubusercontent.com/zhangyunhao116/public-data/master/skipset-benchmark.png)
 
 ```shell
 $ go test -run=NOTEST -bench=. -benchtime=100000x -benchmem -count=10 -timeout=60m  > x.txt

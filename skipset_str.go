@@ -4,7 +4,13 @@ import (
 	"sync"
 	"sync/atomic"
 	"unsafe"
+
+	"github.com/zhangyunhao116/wyhash"
 )
+
+func hash(s string) uint64 {
+	return wyhash.Sum64String(s)
+}
 
 // StringSet represents a set based on skip list in ascending order.
 // It base on Uint64Set.
@@ -25,7 +31,7 @@ type stringNode struct {
 func newStringNode(val string, level int) *stringNode {
 	return &stringNode{
 		val:   val,
-		score: xxh3Hash(val),
+		score: hash(val),
 		next:  make([]*stringNode, level),
 	}
 }
@@ -68,7 +74,7 @@ func NewString() *StringSet {
 // The returned preds and succs always satisfy preds[i] > score >= succs[i].
 func (s *StringSet) findNodeDelete(val string, preds *[maxLevel]*stringNode, succs *[maxLevel]*stringNode) int {
 	// lFound represents the index of the first layer at which it found a node.
-	score := xxh3Hash(val)
+	score := hash(val)
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
@@ -91,7 +97,7 @@ func (s *StringSet) findNodeDelete(val string, preds *[maxLevel]*stringNode, suc
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
 func (s *StringSet) findNodeInsert(val string, preds *[maxLevel]*stringNode, succs *[maxLevel]*stringNode) int {
 	// lFound represents the index of the first layer at which it found a node.
-	score := xxh3Hash(val)
+	score := hash(val)
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
@@ -181,7 +187,7 @@ func (s *StringSet) Insert(val string) bool {
 
 // Contains check if the score is in the skip set.
 func (s *StringSet) Contains(val string) bool {
-	score := xxh3Hash(val)
+	score := hash(val)
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)

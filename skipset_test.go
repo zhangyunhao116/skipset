@@ -171,10 +171,12 @@ func TestNewInt64(t *testing.T) {
 			} else if r != 999 {
 				l.Delete(int(fastrandn(smallRndN)) + 1)
 			} else {
+				var pre int
 				l.Range(func(score int) bool {
-					if score == 0 { // default header and tail score
+					if score <= pre { // 0 is the default value for header and tail score
 						panic("invalid content")
 					}
+					pre = score
 					return true
 				})
 			}

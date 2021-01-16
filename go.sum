@@ -1,6 +1,2 @@
-github.com/zeebo/xxh3 v0.8.2 h1:8V3CL8YrAiyCw8W9fN8CsZsknxMrbVaLEDva6+ajFUw=
-github.com/zeebo/xxh3 v0.8.2/go.mod h1:AQY73TOrhF3jNsdiM9zZOb8MThrYbZONHj7ryDBaLpg=
-github.com/zeebo/xxh3 v0.9.0 h1:70QX3PvmiP6a6ZWaaZMxXjRyIMCqf//9JDXf8zIhqmY=
-github.com/zeebo/xxh3 v0.9.0/go.mod h1:AQY73TOrhF3jNsdiM9zZOb8MThrYbZONHj7ryDBaLpg=
-golang.org/x/sys v0.0.0-20200727154430-2d971f7391a4 h1:gtF+PUC1CD1a9ocwQHbVNXuTp6RQsAYt6tpi6zjT81Y=
-golang.org/x/sys v0.0.0-20200727154430-2d971f7391a4/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+github.com/zhangyunhao116/wyhash v0.2.0 h1:CTItoi25ET1WWtBh2px4RWvFdaXgq+ObiwEveuIyhhM=
+github.com/zhangyunhao116/wyhash v0.2.0/go.mod h1:hTaM8vXeihlRBvqbOiC56U/UJ+x6A5ZnL2dfyceT7hU=

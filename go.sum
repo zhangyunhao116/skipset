@@ -1,2 +1,4 @@
-github.com/zhangyunhao116/wyhash v0.2.0 h1:CTItoi25ET1WWtBh2px4RWvFdaXgq+ObiwEveuIyhhM=
-github.com/zhangyunhao116/wyhash v0.2.0/go.mod h1:hTaM8vXeihlRBvqbOiC56U/UJ+x6A5ZnL2dfyceT7hU=
+github.com/zhangyunhao116/sbconv v0.2.1 h1:9Z43QFpnkYNjCrRz8UR9ShVRVQ0OG5VtLKQ3mAL5zjU=
+github.com/zhangyunhao116/sbconv v0.2.1/go.mod h1:pdAXGnJGNM68XNdJOfGCelkEHgrQMWSeW/2/qKjuiQQ=
+github.com/zhangyunhao116/wyhash v0.3.2 h1:v2VfcnTCLWv0mjFNg6t2EcZAj8Y91fG7Vb004xHauXI=
+github.com/zhangyunhao116/wyhash v0.3.2/go.mod h1:9okT6cr1VZK9N3Tv0I6qUYDNtQgOfcQgfMRCEXt9d8I=

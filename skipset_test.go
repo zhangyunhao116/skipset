@@ -184,6 +184,36 @@ func TestNewInt64(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+
+	// Correctness 2.
+	var (
+		x     = NewInt()
+		y     = NewInt()
+		count = 10000
+	)
+
+	for i := 0; i < count; i++ {
+		x.Insert(i)
+	}
+
+	for i := 0; i < 16; i++ {
+		wg.Add(1)
+		go func() {
+			x.Range(func(score int) bool {
+				if x.Delete(score) {
+					if !y.Insert(score) {
+						panic("invalid insert")
+					}
+				}
+				return true
+			})
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	if x.Len() != 0 || y.Len() != count {
+		t.Fatal("invalid length")
+	}
 }
 
 func TestNewString(t *testing.T) {

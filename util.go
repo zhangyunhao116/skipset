@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	maxLevel = 32
+	maxLevel = 16
 	p        = 0.25
 )
 

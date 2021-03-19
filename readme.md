@@ -75,7 +75,7 @@ func main() {
 
 ## Benchmark
 
-Go version: go1.15.6 linux/amd64
+Go version: go1.16.2 linux/amd64
 
 CPU: AMD 3700x(8C16T), running at 3.6GHz
 
@@ -92,36 +92,36 @@ $ benchstat x.txt
 
 ```
 name                                                time/op
-Insert/skipset-16                                    173ns ±11%
-Insert/sync.Map-16                                   680ns ± 6%
-Contains100Hits/skipset-16                          16.6ns ±35%
-Contains100Hits/sync.Map-16                         14.6ns ±12%
-Contains50Hits/skipset-16                           14.7ns ±12%
-Contains50Hits/sync.Map-16                          14.2ns ± 9%
-ContainsNoHits/skipset-16                           15.4ns ±17%
-ContainsNoHits/sync.Map-16                          12.8ns ±15%
-50Insert50Contains/skipset-16                       90.1ns ± 8%
-50Insert50Contains/sync.Map-16                       578ns ± 8%
-30Insert70Contains/skipset-16                       67.8ns ± 3%
-30Insert70Contains/sync.Map-16                       595ns ± 7%
-1Delete9Insert90Contains/skipset-16                 40.7ns ±14%
-1Delete9Insert90Contains/sync.Map-16                 504ns ± 5%
-1Range9Delete90Insert900Contains/skipset-16         45.1ns ±21%
-1Range9Delete90Insert900Contains/sync.Map-16        1.15µs ± 9%
-StringInsert/skipset-16                              202ns ± 9%
-StringInsert/sync.Map-16                             916ns ± 4%
-StringContains50Hits/skipset-16                     25.8ns ± 9%
-StringContains50Hits/sync.Map-16                    18.0ns ±18%
-String30Insert70Contains/skipset-16                 93.8ns ±11%
-String30Insert70Contains/sync.Map-16                 759ns ± 5%
-String1Delete9Insert90Contains/skipset-16           49.4ns ± 4%
-String1Delete9Insert90Contains/sync.Map-16           608ns ± 4%
-String1Range9Delete90Insert900Contains/skipset-16   56.3ns ± 8%
-String1Range9Delete90Insert900Contains/sync.Map-16  1.35µs ±12%
+Insert/skipset-16                                    107ns ±10%
+Insert/sync.Map-16                                   684ns ± 5%
+Contains100Hits/skipset-16                          13.1ns ±21%
+Contains100Hits/sync.Map-16                         15.0ns ± 8%
+Contains50Hits/skipset-16                           13.2ns ±18%
+Contains50Hits/sync.Map-16                          14.0ns ±14%
+ContainsNoHits/skipset-16                           14.0ns ±19%
+ContainsNoHits/sync.Map-16                          12.7ns ±22%
+50Insert50Contains/skipset-16                       62.8ns ± 6%
+50Insert50Contains/sync.Map-16                       577ns ± 6%
+30Insert70Contains/skipset-16                       44.2ns ±26%
+30Insert70Contains/sync.Map-16                       583ns ± 8%
+1Delete9Insert90Contains/skipset-16                 33.6ns ±13%
+1Delete9Insert90Contains/sync.Map-16                 502ns ± 8%
+1Range9Delete90Insert900Contains/skipset-16         37.3ns ±19%
+1Range9Delete90Insert900Contains/sync.Map-16        1.13µs ±12%
+StringInsert/skipset-16                              145ns ±17%
+StringInsert/sync.Map-16                             877ns ± 3%
+StringContains50Hits/skipset-16                     20.9ns ± 5%
+StringContains50Hits/sync.Map-16                    19.6ns ±14%
+String30Insert70Contains/skipset-16                 68.4ns ± 6%
+String30Insert70Contains/sync.Map-16                 751ns ± 7%
+String1Delete9Insert90Contains/skipset-16           39.4ns ±32%
+String1Delete9Insert90Contains/sync.Map-16           617ns ± 3%
+String1Range9Delete90Insert900Contains/skipset-16   44.8ns ±16%
+String1Range9Delete90Insert900Contains/sync.Map-16  1.39µs ±15%
 
 name                                                alloc/op
-Insert/skipset-16                                    59.0B ± 0%
-Insert/sync.Map-16                                    128B ± 1%
+Insert/skipset-16                                    58.0B ± 0%
+Insert/sync.Map-16                                    128B ± 0%
 Contains100Hits/skipset-16                           0.00B     
 Contains100Hits/sync.Map-16                          0.00B     
 Contains50Hits/skipset-16                            0.00B     
@@ -129,21 +129,21 @@ Contains50Hits/sync.Map-16                           0.00B
 ContainsNoHits/skipset-16                            0.00B     
 ContainsNoHits/sync.Map-16                           0.00B     
 50Insert50Contains/skipset-16                        29.0B ± 0%
-50Insert50Contains/sync.Map-16                       64.8B ± 2%
+50Insert50Contains/sync.Map-16                       69.1B ±19%
 30Insert70Contains/skipset-16                        17.0B ± 0%
-30Insert70Contains/sync.Map-16                       77.0B ±17%
+30Insert70Contains/sync.Map-16                       76.9B ± 7%
 1Delete9Insert90Contains/skipset-16                  5.00B ± 0%
-1Delete9Insert90Contains/sync.Map-16                 55.1B ± 5%
+1Delete9Insert90Contains/sync.Map-16                 55.3B ± 5%
 1Range9Delete90Insert900Contains/skipset-16          5.00B ± 0%
-1Range9Delete90Insert900Contains/sync.Map-16          290B ±16%
+1Range9Delete90Insert900Contains/sync.Map-16          283B ±14%
 StringInsert/skipset-16                              90.0B ± 0%
 StringInsert/sync.Map-16                              152B ± 0%
 StringContains50Hits/skipset-16                      3.00B ± 0%
 StringContains50Hits/sync.Map-16                     3.00B ± 0%
 String30Insert70Contains/skipset-16                  38.0B ± 0%
-String30Insert70Contains/sync.Map-16                 95.4B ±13%
+String30Insert70Contains/sync.Map-16                 97.8B ±11%
 String1Delete9Insert90Contains/skipset-16            22.0B ± 0%
-String1Delete9Insert90Contains/sync.Map-16           72.6B ± 2%
+String1Delete9Insert90Contains/sync.Map-16           72.5B ± 1%
 String1Range9Delete90Insert900Contains/skipset-16    22.0B ± 0%
-String1Range9Delete90Insert900Contains/sync.Map-16    291B ±15%
+String1Range9Delete90Insert900Contains/sync.Map-16    315B ±22%
 ```

@@ -21,17 +21,17 @@ type StringSet struct {
 }
 
 type stringNode struct {
-	val   string
+	value string
 	score uint64
 	next  []*stringNode
 	mu    sync.Mutex
 	flags bitflag
 }
 
-func newStringNode(val string, level int) *stringNode {
+func newStringNode(value string, level int) *stringNode {
 	return &stringNode{
-		val:   val,
-		score: hash(val),
+		value: value,
+		score: hash(value),
 		next:  make([]*stringNode, level),
 	}
 }
@@ -41,17 +41,17 @@ func (n *stringNode) loadNext(i int) *stringNode {
 	return (*stringNode)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i]))))
 }
 
-// n.next[i] = val
-func (n *stringNode) storeNext(i int, val *stringNode) {
-	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(val))
+// n.next[i] = node
+func (n *stringNode) storeNext(i int, node *stringNode) {
+	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(node))
 }
 
 // Return 1 if n is bigger, 0 if equal, else -1.
-func (n *stringNode) cmp(score uint64, val string) int {
+func (n *stringNode) cmp(score uint64, value string) int {
 	if n.score > score {
 		return 1
 	} else if n.score == score {
-		return cmpstring(n.val, val)
+		return cmpstring(n.value, value)
 	}
 	return -1
 }
@@ -72,13 +72,13 @@ func NewString() *StringSet {
 
 // findNodeDelete takes a score and two maximal-height arrays then searches exactly as in a sequential skip-list.
 // The returned preds and succs always satisfy preds[i] > score >= succs[i].
-func (s *StringSet) findNodeDelete(val string, preds *[maxLevel]*stringNode, succs *[maxLevel]*stringNode) int {
+func (s *StringSet) findNodeDelete(value string, preds *[maxLevel]*stringNode, succs *[maxLevel]*stringNode) int {
 	// lFound represents the index of the first layer at which it found a node.
-	score := hash(val)
+	score := hash(value)
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(score, val) < 0 {
+		for succ != s.tail && succ.cmp(score, value) < 0 {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -86,7 +86,7 @@ func (s *StringSet) findNodeDelete(val string, preds *[maxLevel]*stringNode, suc
 		succs[i] = succ
 
 		// Check if the score already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.cmp(score, val) == 0 {
+		if lFound == -1 && succ != s.tail && succ.cmp(score, value) == 0 {
 			lFound = i
 		}
 	}
@@ -95,13 +95,13 @@ func (s *StringSet) findNodeDelete(val string, preds *[maxLevel]*stringNode, suc
 
 // findNodeInsert takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > score > succs[i].
-func (s *StringSet) findNodeInsert(val string, preds *[maxLevel]*stringNode, succs *[maxLevel]*stringNode) int {
+func (s *StringSet) findNodeInsert(value string, preds *[maxLevel]*stringNode, succs *[maxLevel]*stringNode) int {
 	// lFound represents the index of the first layer at which it found a node.
-	score := hash(val)
+	score := hash(value)
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(score, val) < 0 {
+		for succ != s.tail && succ.cmp(score, value) < 0 {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -109,7 +109,7 @@ func (s *StringSet) findNodeInsert(val string, preds *[maxLevel]*stringNode, suc
 		succs[i] = succ
 
 		// Check if the score already in the skip list.
-		if succ != s.tail && succ.cmp(score, val) == 0 {
+		if succ != s.tail && succ.cmp(score, value) == 0 {
 			return i
 		}
 	}
@@ -130,11 +130,11 @@ func unlockString(preds [maxLevel]*stringNode, highestLevel int) {
 // return false if this process can't insert this score, because another process has insert the same score.
 //
 // If the score is in the skip set but not fully linked, this process will wait until it is.
-func (s *StringSet) Insert(val string) bool {
+func (s *StringSet) Insert(value string) bool {
 	level := randomLevel()
 	var preds, succs [maxLevel]*stringNode
 	for {
-		lFound := s.findNodeInsert(val, &preds, &succs)
+		lFound := s.findNodeInsert(value, &preds, &succs)
 		if lFound != -1 { // indicating the score is already in the skip-list
 			nodeFound := succs[lFound]
 			if !nodeFound.flags.Get(marked) {
@@ -173,7 +173,7 @@ func (s *StringSet) Insert(val string) bool {
 			continue
 		}
 
-		nn := newStringNode(val, level)
+		nn := newStringNode(value, level)
 		for layer := 0; layer < level; layer++ {
 			nn.next[layer] = succs[layer]
 			preds[layer].storeNext(layer, nn)
@@ -186,18 +186,18 @@ func (s *StringSet) Insert(val string) bool {
 }
 
 // Contains check if the score is in the skip set.
-func (s *StringSet) Contains(val string) bool {
-	score := hash(val)
+func (s *StringSet) Contains(value string) bool {
+	score := hash(value)
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.cmp(score, val) < 0 {
+		for nex != s.tail && nex.cmp(score, value) < 0 {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the score already in the skip list.
-		if nex != s.tail && nex.cmp(score, val) == 0 {
+		if nex != s.tail && nex.cmp(score, value) == 0 {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -205,7 +205,7 @@ func (s *StringSet) Contains(val string) bool {
 }
 
 // Delete a node from the skip set.
-func (s *StringSet) Delete(score string) bool {
+func (s *StringSet) Delete(value string) bool {
 	var (
 		nodeToDelete *stringNode
 		isMarked     bool // represents if this operation mark the node
@@ -213,7 +213,7 @@ func (s *StringSet) Delete(score string) bool {
 		preds, succs [maxLevel]*stringNode
 	)
 	for {
-		lFound := s.findNodeDelete(score, &preds, &succs)
+		lFound := s.findNodeDelete(value, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
 			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
@@ -269,14 +269,14 @@ func (s *StringSet) Delete(score string) bool {
 
 // Range calls f sequentially for each val present in the skip set.
 // If f returns false, range stops the iteration.
-func (s *StringSet) Range(f func(val string) bool) {
+func (s *StringSet) Range(f func(value string) bool) {
 	x := s.header.loadNext(0)
 	for x != s.tail {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
 		}
-		if !f(x.val) {
+		if !f(x.value) {
 			break
 		}
 		x = x.loadNext(0)

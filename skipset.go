@@ -40,6 +40,16 @@ func (n *int64Node) storeNext(i int, node *int64Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(node))
 }
 
+// Return 1 if n is bigger, 0 if equal, else -1.
+func (n *int64Node) cmp(value int64) int {
+	if n.value > value {
+		return 1
+	} else if n.value == value {
+		return 0
+	}
+	return -1
+}
+
 // NewInt64 return an empty int64 skip set.
 func NewInt64() *Int64Set {
 	h, t := newInt64Node(0, maxLevel), newInt64Node(0, maxLevel)
@@ -61,7 +71,7 @@ func (s *Int64Set) findNodeDelete(value int64, preds *[maxLevel]*int64Node, succ
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.value < value {
+		for succ != s.tail && succ.cmp(value) < 0 {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -69,7 +79,7 @@ func (s *Int64Set) findNodeDelete(value int64, preds *[maxLevel]*int64Node, succ
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && value == succ.value {
+		if lFound == -1 && succ != s.tail && succ.cmp(value) == 0 {
 			lFound = i
 		}
 	}
@@ -82,7 +92,7 @@ func (s *Int64Set) findNodeInsert(value int64, preds *[maxLevel]*int64Node, succ
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.value < value {
+		for succ != s.tail && succ.cmp(value) < 0 {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -90,7 +100,7 @@ func (s *Int64Set) findNodeInsert(value int64, preds *[maxLevel]*int64Node, succ
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && value == succ.value {
+		if succ != s.tail && succ.cmp(value) == 0 {
 			return i
 		}
 	}
@@ -171,13 +181,13 @@ func (s *Int64Set) Contains(value int64) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.value < value {
+		for nex != s.tail && nex.cmp(value) < 0 {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && value == nex.value {
+		if nex != s.tail && nex.cmp(value) == 0 {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}

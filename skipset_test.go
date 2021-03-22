@@ -31,7 +31,7 @@ func Example() {
 	fmt.Printf("skipset contains %d items\r\n", l.Len())
 }
 
-func TestNewInt64(t *testing.T) {
+func TestIntSet(t *testing.T) {
 	// Correctness.
 	l := NewInt()
 	if l.length != 0 {
@@ -216,7 +216,7 @@ func TestNewInt64(t *testing.T) {
 	}
 }
 
-func TestNewString(t *testing.T) {
+func TestStringSet(t *testing.T) {
 	x := NewString()
 	if !x.Insert("111") || x.Len() != 1 {
 		t.Fatal("invalid")

@@ -38,14 +38,12 @@ func (n *float32Node) storeNext(i int, node *float32Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(node))
 }
 
-// Return 1 if n is bigger, 0 if equal, else -1.
-func (n *float32Node) cmp(value float32) int {
-	if n.value > value {
-		return 1
-	} else if n.value == value {
-		return 0
-	}
-	return -1
+func (n *float32Node) lessthan(value float32) bool {
+	return n.value < value
+}
+
+func (n *float32Node) equal(value float32) bool {
+	return n.value == value
 }
 
 // NewFloat32 return an empty float32 skip set.
@@ -69,7 +67,7 @@ func (s *Float32Set) findNodeDelete(value float32, preds *[maxLevel]*float32Node
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -77,7 +75,7 @@ func (s *Float32Set) findNodeDelete(value float32, preds *[maxLevel]*float32Node
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.cmp(value) == 0 {
+		if lFound == -1 && succ != s.tail && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -85,12 +83,12 @@ func (s *Float32Set) findNodeDelete(value float32, preds *[maxLevel]*float32Node
 }
 
 // findNodeInsert takes a value and two maximal-height arrays then searches exactly as in a sequential skip-set.
-// The returned preds and succs always satisfy preds[i] > value > succs[i].
+// The returned preds and succs always satisfy preds[i] > value >= succs[i].
 func (s *Float32Set) findNodeInsert(value float32, preds *[maxLevel]*float32Node, succs *[maxLevel]*float32Node) int {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -98,7 +96,7 @@ func (s *Float32Set) findNodeInsert(value float32, preds *[maxLevel]*float32Node
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.cmp(value) == 0 {
+		if succ != s.tail && succ.equal(value) {
 			return i
 		}
 	}
@@ -179,13 +177,13 @@ func (s *Float32Set) Contains(value float32) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.cmp(value) < 0 {
+		for nex != s.tail && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.cmp(value) == 0 {
+		if nex != s.tail && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -309,14 +307,12 @@ func (n *float64Node) storeNext(i int, node *float64Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(node))
 }
 
-// Return 1 if n is bigger, 0 if equal, else -1.
-func (n *float64Node) cmp(value float64) int {
-	if n.value > value {
-		return 1
-	} else if n.value == value {
-		return 0
-	}
-	return -1
+func (n *float64Node) lessthan(value float64) bool {
+	return n.value < value
+}
+
+func (n *float64Node) equal(value float64) bool {
+	return n.value == value
 }
 
 // NewFloat64 return an empty float64 skip set.
@@ -340,7 +336,7 @@ func (s *Float64Set) findNodeDelete(value float64, preds *[maxLevel]*float64Node
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -348,7 +344,7 @@ func (s *Float64Set) findNodeDelete(value float64, preds *[maxLevel]*float64Node
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.cmp(value) == 0 {
+		if lFound == -1 && succ != s.tail && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -356,12 +352,12 @@ func (s *Float64Set) findNodeDelete(value float64, preds *[maxLevel]*float64Node
 }
 
 // findNodeInsert takes a value and two maximal-height arrays then searches exactly as in a sequential skip-set.
-// The returned preds and succs always satisfy preds[i] > value > succs[i].
+// The returned preds and succs always satisfy preds[i] > value >= succs[i].
 func (s *Float64Set) findNodeInsert(value float64, preds *[maxLevel]*float64Node, succs *[maxLevel]*float64Node) int {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -369,7 +365,7 @@ func (s *Float64Set) findNodeInsert(value float64, preds *[maxLevel]*float64Node
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.cmp(value) == 0 {
+		if succ != s.tail && succ.equal(value) {
 			return i
 		}
 	}
@@ -450,13 +446,13 @@ func (s *Float64Set) Contains(value float64) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.cmp(value) < 0 {
+		for nex != s.tail && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.cmp(value) == 0 {
+		if nex != s.tail && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -580,14 +576,12 @@ func (n *int32Node) storeNext(i int, node *int32Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(node))
 }
 
-// Return 1 if n is bigger, 0 if equal, else -1.
-func (n *int32Node) cmp(value int32) int {
-	if n.value > value {
-		return 1
-	} else if n.value == value {
-		return 0
-	}
-	return -1
+func (n *int32Node) lessthan(value int32) bool {
+	return n.value < value
+}
+
+func (n *int32Node) equal(value int32) bool {
+	return n.value == value
 }
 
 // NewInt32 return an empty int32 skip set.
@@ -611,7 +605,7 @@ func (s *Int32Set) findNodeDelete(value int32, preds *[maxLevel]*int32Node, succ
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -619,7 +613,7 @@ func (s *Int32Set) findNodeDelete(value int32, preds *[maxLevel]*int32Node, succ
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.cmp(value) == 0 {
+		if lFound == -1 && succ != s.tail && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -627,12 +621,12 @@ func (s *Int32Set) findNodeDelete(value int32, preds *[maxLevel]*int32Node, succ
 }
 
 // findNodeInsert takes a value and two maximal-height arrays then searches exactly as in a sequential skip-set.
-// The returned preds and succs always satisfy preds[i] > value > succs[i].
+// The returned preds and succs always satisfy preds[i] > value >= succs[i].
 func (s *Int32Set) findNodeInsert(value int32, preds *[maxLevel]*int32Node, succs *[maxLevel]*int32Node) int {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -640,7 +634,7 @@ func (s *Int32Set) findNodeInsert(value int32, preds *[maxLevel]*int32Node, succ
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.cmp(value) == 0 {
+		if succ != s.tail && succ.equal(value) {
 			return i
 		}
 	}
@@ -721,13 +715,13 @@ func (s *Int32Set) Contains(value int32) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.cmp(value) < 0 {
+		for nex != s.tail && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.cmp(value) == 0 {
+		if nex != s.tail && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -851,14 +845,12 @@ func (n *int16Node) storeNext(i int, node *int16Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(node))
 }
 
-// Return 1 if n is bigger, 0 if equal, else -1.
-func (n *int16Node) cmp(value int16) int {
-	if n.value > value {
-		return 1
-	} else if n.value == value {
-		return 0
-	}
-	return -1
+func (n *int16Node) lessthan(value int16) bool {
+	return n.value < value
+}
+
+func (n *int16Node) equal(value int16) bool {
+	return n.value == value
 }
 
 // NewInt16 return an empty int16 skip set.
@@ -882,7 +874,7 @@ func (s *Int16Set) findNodeDelete(value int16, preds *[maxLevel]*int16Node, succ
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -890,7 +882,7 @@ func (s *Int16Set) findNodeDelete(value int16, preds *[maxLevel]*int16Node, succ
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.cmp(value) == 0 {
+		if lFound == -1 && succ != s.tail && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -898,12 +890,12 @@ func (s *Int16Set) findNodeDelete(value int16, preds *[maxLevel]*int16Node, succ
 }
 
 // findNodeInsert takes a value and two maximal-height arrays then searches exactly as in a sequential skip-set.
-// The returned preds and succs always satisfy preds[i] > value > succs[i].
+// The returned preds and succs always satisfy preds[i] > value >= succs[i].
 func (s *Int16Set) findNodeInsert(value int16, preds *[maxLevel]*int16Node, succs *[maxLevel]*int16Node) int {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -911,7 +903,7 @@ func (s *Int16Set) findNodeInsert(value int16, preds *[maxLevel]*int16Node, succ
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.cmp(value) == 0 {
+		if succ != s.tail && succ.equal(value) {
 			return i
 		}
 	}
@@ -992,13 +984,13 @@ func (s *Int16Set) Contains(value int16) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.cmp(value) < 0 {
+		for nex != s.tail && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.cmp(value) == 0 {
+		if nex != s.tail && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -1122,14 +1114,12 @@ func (n *intNode) storeNext(i int, node *intNode) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(node))
 }
 
-// Return 1 if n is bigger, 0 if equal, else -1.
-func (n *intNode) cmp(value int) int {
-	if n.value > value {
-		return 1
-	} else if n.value == value {
-		return 0
-	}
-	return -1
+func (n *intNode) lessthan(value int) bool {
+	return n.value < value
+}
+
+func (n *intNode) equal(value int) bool {
+	return n.value == value
 }
 
 // NewInt return an empty int skip set.
@@ -1153,7 +1143,7 @@ func (s *IntSet) findNodeDelete(value int, preds *[maxLevel]*intNode, succs *[ma
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -1161,7 +1151,7 @@ func (s *IntSet) findNodeDelete(value int, preds *[maxLevel]*intNode, succs *[ma
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.cmp(value) == 0 {
+		if lFound == -1 && succ != s.tail && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -1169,12 +1159,12 @@ func (s *IntSet) findNodeDelete(value int, preds *[maxLevel]*intNode, succs *[ma
 }
 
 // findNodeInsert takes a value and two maximal-height arrays then searches exactly as in a sequential skip-set.
-// The returned preds and succs always satisfy preds[i] > value > succs[i].
+// The returned preds and succs always satisfy preds[i] > value >= succs[i].
 func (s *IntSet) findNodeInsert(value int, preds *[maxLevel]*intNode, succs *[maxLevel]*intNode) int {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -1182,7 +1172,7 @@ func (s *IntSet) findNodeInsert(value int, preds *[maxLevel]*intNode, succs *[ma
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.cmp(value) == 0 {
+		if succ != s.tail && succ.equal(value) {
 			return i
 		}
 	}
@@ -1263,13 +1253,13 @@ func (s *IntSet) Contains(value int) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.cmp(value) < 0 {
+		for nex != s.tail && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.cmp(value) == 0 {
+		if nex != s.tail && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -1393,14 +1383,12 @@ func (n *uint64Node) storeNext(i int, node *uint64Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(node))
 }
 
-// Return 1 if n is bigger, 0 if equal, else -1.
-func (n *uint64Node) cmp(value uint64) int {
-	if n.value > value {
-		return 1
-	} else if n.value == value {
-		return 0
-	}
-	return -1
+func (n *uint64Node) lessthan(value uint64) bool {
+	return n.value < value
+}
+
+func (n *uint64Node) equal(value uint64) bool {
+	return n.value == value
 }
 
 // NewUint64 return an empty uint64 skip set.
@@ -1424,7 +1412,7 @@ func (s *Uint64Set) findNodeDelete(value uint64, preds *[maxLevel]*uint64Node, s
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -1432,7 +1420,7 @@ func (s *Uint64Set) findNodeDelete(value uint64, preds *[maxLevel]*uint64Node, s
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.cmp(value) == 0 {
+		if lFound == -1 && succ != s.tail && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -1440,12 +1428,12 @@ func (s *Uint64Set) findNodeDelete(value uint64, preds *[maxLevel]*uint64Node, s
 }
 
 // findNodeInsert takes a value and two maximal-height arrays then searches exactly as in a sequential skip-set.
-// The returned preds and succs always satisfy preds[i] > value > succs[i].
+// The returned preds and succs always satisfy preds[i] > value >= succs[i].
 func (s *Uint64Set) findNodeInsert(value uint64, preds *[maxLevel]*uint64Node, succs *[maxLevel]*uint64Node) int {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -1453,7 +1441,7 @@ func (s *Uint64Set) findNodeInsert(value uint64, preds *[maxLevel]*uint64Node, s
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.cmp(value) == 0 {
+		if succ != s.tail && succ.equal(value) {
 			return i
 		}
 	}
@@ -1534,13 +1522,13 @@ func (s *Uint64Set) Contains(value uint64) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.cmp(value) < 0 {
+		for nex != s.tail && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.cmp(value) == 0 {
+		if nex != s.tail && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -1664,14 +1652,12 @@ func (n *uint32Node) storeNext(i int, node *uint32Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(node))
 }
 
-// Return 1 if n is bigger, 0 if equal, else -1.
-func (n *uint32Node) cmp(value uint32) int {
-	if n.value > value {
-		return 1
-	} else if n.value == value {
-		return 0
-	}
-	return -1
+func (n *uint32Node) lessthan(value uint32) bool {
+	return n.value < value
+}
+
+func (n *uint32Node) equal(value uint32) bool {
+	return n.value == value
 }
 
 // NewUint32 return an empty uint32 skip set.
@@ -1695,7 +1681,7 @@ func (s *Uint32Set) findNodeDelete(value uint32, preds *[maxLevel]*uint32Node, s
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -1703,7 +1689,7 @@ func (s *Uint32Set) findNodeDelete(value uint32, preds *[maxLevel]*uint32Node, s
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.cmp(value) == 0 {
+		if lFound == -1 && succ != s.tail && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -1711,12 +1697,12 @@ func (s *Uint32Set) findNodeDelete(value uint32, preds *[maxLevel]*uint32Node, s
 }
 
 // findNodeInsert takes a value and two maximal-height arrays then searches exactly as in a sequential skip-set.
-// The returned preds and succs always satisfy preds[i] > value > succs[i].
+// The returned preds and succs always satisfy preds[i] > value >= succs[i].
 func (s *Uint32Set) findNodeInsert(value uint32, preds *[maxLevel]*uint32Node, succs *[maxLevel]*uint32Node) int {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -1724,7 +1710,7 @@ func (s *Uint32Set) findNodeInsert(value uint32, preds *[maxLevel]*uint32Node, s
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.cmp(value) == 0 {
+		if succ != s.tail && succ.equal(value) {
 			return i
 		}
 	}
@@ -1805,13 +1791,13 @@ func (s *Uint32Set) Contains(value uint32) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.cmp(value) < 0 {
+		for nex != s.tail && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.cmp(value) == 0 {
+		if nex != s.tail && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -1935,14 +1921,12 @@ func (n *uint16Node) storeNext(i int, node *uint16Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(node))
 }
 
-// Return 1 if n is bigger, 0 if equal, else -1.
-func (n *uint16Node) cmp(value uint16) int {
-	if n.value > value {
-		return 1
-	} else if n.value == value {
-		return 0
-	}
-	return -1
+func (n *uint16Node) lessthan(value uint16) bool {
+	return n.value < value
+}
+
+func (n *uint16Node) equal(value uint16) bool {
+	return n.value == value
 }
 
 // NewUint16 return an empty uint16 skip set.
@@ -1966,7 +1950,7 @@ func (s *Uint16Set) findNodeDelete(value uint16, preds *[maxLevel]*uint16Node, s
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -1974,7 +1958,7 @@ func (s *Uint16Set) findNodeDelete(value uint16, preds *[maxLevel]*uint16Node, s
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.cmp(value) == 0 {
+		if lFound == -1 && succ != s.tail && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -1982,12 +1966,12 @@ func (s *Uint16Set) findNodeDelete(value uint16, preds *[maxLevel]*uint16Node, s
 }
 
 // findNodeInsert takes a value and two maximal-height arrays then searches exactly as in a sequential skip-set.
-// The returned preds and succs always satisfy preds[i] > value > succs[i].
+// The returned preds and succs always satisfy preds[i] > value >= succs[i].
 func (s *Uint16Set) findNodeInsert(value uint16, preds *[maxLevel]*uint16Node, succs *[maxLevel]*uint16Node) int {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -1995,7 +1979,7 @@ func (s *Uint16Set) findNodeInsert(value uint16, preds *[maxLevel]*uint16Node, s
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.cmp(value) == 0 {
+		if succ != s.tail && succ.equal(value) {
 			return i
 		}
 	}
@@ -2076,13 +2060,13 @@ func (s *Uint16Set) Contains(value uint16) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.cmp(value) < 0 {
+		for nex != s.tail && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.cmp(value) == 0 {
+		if nex != s.tail && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -2206,14 +2190,12 @@ func (n *uintNode) storeNext(i int, node *uintNode) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(node))
 }
 
-// Return 1 if n is bigger, 0 if equal, else -1.
-func (n *uintNode) cmp(value uint) int {
-	if n.value > value {
-		return 1
-	} else if n.value == value {
-		return 0
-	}
-	return -1
+func (n *uintNode) lessthan(value uint) bool {
+	return n.value < value
+}
+
+func (n *uintNode) equal(value uint) bool {
+	return n.value == value
 }
 
 // NewUint return an empty uint skip set.
@@ -2237,7 +2219,7 @@ func (s *UintSet) findNodeDelete(value uint, preds *[maxLevel]*uintNode, succs *
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -2245,7 +2227,7 @@ func (s *UintSet) findNodeDelete(value uint, preds *[maxLevel]*uintNode, succs *
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.cmp(value) == 0 {
+		if lFound == -1 && succ != s.tail && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -2253,12 +2235,12 @@ func (s *UintSet) findNodeDelete(value uint, preds *[maxLevel]*uintNode, succs *
 }
 
 // findNodeInsert takes a value and two maximal-height arrays then searches exactly as in a sequential skip-set.
-// The returned preds and succs always satisfy preds[i] > value > succs[i].
+// The returned preds and succs always satisfy preds[i] > value >= succs[i].
 func (s *UintSet) findNodeInsert(value uint, preds *[maxLevel]*uintNode, succs *[maxLevel]*uintNode) int {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -2266,7 +2248,7 @@ func (s *UintSet) findNodeInsert(value uint, preds *[maxLevel]*uintNode, succs *
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.cmp(value) == 0 {
+		if succ != s.tail && succ.equal(value) {
 			return i
 		}
 	}
@@ -2347,13 +2329,13 @@ func (s *UintSet) Contains(value uint) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.cmp(value) < 0 {
+		for nex != s.tail && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.cmp(value) == 0 {
+		if nex != s.tail && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}

@@ -40,14 +40,12 @@ func (n *int64Node) storeNext(i int, node *int64Node) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(node))
 }
 
-// Return 1 if n is bigger, 0 if equal, else -1.
-func (n *int64Node) cmp(value int64) int {
-	if n.value > value {
-		return 1
-	} else if n.value == value {
-		return 0
-	}
-	return -1
+func (n *int64Node) lessthan(value int64) bool {
+	return n.value < value
+}
+
+func (n *int64Node) equal(value int64) bool {
+	return n.value == value
 }
 
 // NewInt64 return an empty int64 skip set.
@@ -71,7 +69,7 @@ func (s *Int64Set) findNodeDelete(value int64, preds *[maxLevel]*int64Node, succ
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -79,7 +77,7 @@ func (s *Int64Set) findNodeDelete(value int64, preds *[maxLevel]*int64Node, succ
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.cmp(value) == 0 {
+		if lFound == -1 && succ != s.tail && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -87,12 +85,12 @@ func (s *Int64Set) findNodeDelete(value int64, preds *[maxLevel]*int64Node, succ
 }
 
 // findNodeInsert takes a value and two maximal-height arrays then searches exactly as in a sequential skip-set.
-// The returned preds and succs always satisfy preds[i] > value > succs[i].
+// The returned preds and succs always satisfy preds[i] > value >= succs[i].
 func (s *Int64Set) findNodeInsert(value int64, preds *[maxLevel]*int64Node, succs *[maxLevel]*int64Node) int {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(value) < 0 {
+		for succ != s.tail && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -100,7 +98,7 @@ func (s *Int64Set) findNodeInsert(value int64, preds *[maxLevel]*int64Node, succ
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.cmp(value) == 0 {
+		if succ != s.tail && succ.equal(value) {
 			return i
 		}
 	}
@@ -181,13 +179,13 @@ func (s *Int64Set) Contains(value int64) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.cmp(value) < 0 {
+		for nex != s.tail && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.cmp(value) == 0 {
+		if nex != s.tail && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}

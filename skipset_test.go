@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -214,6 +215,47 @@ func TestIntSet(t *testing.T) {
 	if x.Len() != 0 || y.Len() != count {
 		t.Fatal("invalid length")
 	}
+
+	// Concurrent Insert and Delete in small zone.
+	x = NewInt()
+	var (
+		insertcount uint64 = 0
+		deletecount uint64 = 0
+	)
+
+	for i := 0; i < 16; i++ {
+		wg.Add(1)
+		go func() {
+			for i := 0; i < 1000; i++ {
+				if fastrandn(2) == 0 {
+					if x.Delete(int(fastrandn(10))) {
+						atomic.AddUint64(&deletecount, 1)
+					}
+				} else {
+					if x.Insert(int(fastrandn(10))) {
+						atomic.AddUint64(&insertcount, 1)
+					}
+				}
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	if insertcount < deletecount {
+		panic("invalid count")
+	}
+	if insertcount-deletecount != uint64(x.Len()) {
+		panic("invalid count")
+	}
+
+	pre := -1
+	x.Range(func(score int) bool {
+		if score <= pre {
+			panic("invalid content")
+		}
+		pre = score
+		return true
+	})
 }
 
 func TestStringSet(t *testing.T) {

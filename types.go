@@ -10,7 +10,6 @@ import (
 // Float32Set represents a set based on skip list in ascending order.
 type Float32Set struct {
 	header *float32Node
-	tail   *float32Node
 	length int64
 }
 
@@ -48,15 +47,10 @@ func (n *float32Node) equal(value float32) bool {
 
 // NewFloat32 return an empty float32 skip set.
 func NewFloat32() *Float32Set {
-	h, t := newFloat32Node(0, maxLevel), newFloat32Node(0, maxLevel)
-	for i := 0; i < maxLevel; i++ {
-		h.next[i] = t
-	}
+	h := newFloat32Node(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
-	t.flags.SetTrue(fullyLinked)
 	return &Float32Set{
 		header: h,
-		tail:   t,
 	}
 }
 
@@ -67,7 +61,7 @@ func (s *Float32Set) findNodeDelete(value float32, preds *[maxLevel]*float32Node
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -75,7 +69,7 @@ func (s *Float32Set) findNodeDelete(value float32, preds *[maxLevel]*float32Node
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.equal(value) {
+		if lFound == -1 && succ != nil && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -88,7 +82,7 @@ func (s *Float32Set) findNodeInsert(value float32, preds *[maxLevel]*float32Node
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -96,7 +90,7 @@ func (s *Float32Set) findNodeInsert(value float32, preds *[maxLevel]*float32Node
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.equal(value) {
+		if succ != nil && succ.equal(value) {
 			return i
 		}
 	}
@@ -153,7 +147,7 @@ func (s *Float32Set) Insert(value float32) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && (succ == nil || !succ.flags.Get(marked)) && pred.loadNext(layer) == succ
 		}
 		if !valid {
 			unlockFloat32(preds, highestLocked)
@@ -177,13 +171,13 @@ func (s *Float32Set) Contains(value float32) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.lessthan(value) {
+		for nex != nil && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.equal(value) {
+		if nex != nil && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -257,7 +251,7 @@ func (s *Float32Set) Delete(value float32) bool {
 // If f returns false, range stops the iteration.
 func (s *Float32Set) Range(f func(value float32) bool) {
 	x := s.header.loadNext(0)
-	for x != s.tail {
+	for x != nil {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
@@ -279,7 +273,6 @@ func (s *Float32Set) Len() int {
 // Float64Set represents a set based on skip list in ascending order.
 type Float64Set struct {
 	header *float64Node
-	tail   *float64Node
 	length int64
 }
 
@@ -317,15 +310,10 @@ func (n *float64Node) equal(value float64) bool {
 
 // NewFloat64 return an empty float64 skip set.
 func NewFloat64() *Float64Set {
-	h, t := newFloat64Node(0, maxLevel), newFloat64Node(0, maxLevel)
-	for i := 0; i < maxLevel; i++ {
-		h.next[i] = t
-	}
+	h := newFloat64Node(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
-	t.flags.SetTrue(fullyLinked)
 	return &Float64Set{
 		header: h,
-		tail:   t,
 	}
 }
 
@@ -336,7 +324,7 @@ func (s *Float64Set) findNodeDelete(value float64, preds *[maxLevel]*float64Node
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -344,7 +332,7 @@ func (s *Float64Set) findNodeDelete(value float64, preds *[maxLevel]*float64Node
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.equal(value) {
+		if lFound == -1 && succ != nil && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -357,7 +345,7 @@ func (s *Float64Set) findNodeInsert(value float64, preds *[maxLevel]*float64Node
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -365,7 +353,7 @@ func (s *Float64Set) findNodeInsert(value float64, preds *[maxLevel]*float64Node
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.equal(value) {
+		if succ != nil && succ.equal(value) {
 			return i
 		}
 	}
@@ -422,7 +410,7 @@ func (s *Float64Set) Insert(value float64) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && (succ == nil || !succ.flags.Get(marked)) && pred.loadNext(layer) == succ
 		}
 		if !valid {
 			unlockFloat64(preds, highestLocked)
@@ -446,13 +434,13 @@ func (s *Float64Set) Contains(value float64) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.lessthan(value) {
+		for nex != nil && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.equal(value) {
+		if nex != nil && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -526,7 +514,7 @@ func (s *Float64Set) Delete(value float64) bool {
 // If f returns false, range stops the iteration.
 func (s *Float64Set) Range(f func(value float64) bool) {
 	x := s.header.loadNext(0)
-	for x != s.tail {
+	for x != nil {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
@@ -548,7 +536,6 @@ func (s *Float64Set) Len() int {
 // Int32Set represents a set based on skip list in ascending order.
 type Int32Set struct {
 	header *int32Node
-	tail   *int32Node
 	length int64
 }
 
@@ -586,15 +573,10 @@ func (n *int32Node) equal(value int32) bool {
 
 // NewInt32 return an empty int32 skip set.
 func NewInt32() *Int32Set {
-	h, t := newInt32Node(0, maxLevel), newInt32Node(0, maxLevel)
-	for i := 0; i < maxLevel; i++ {
-		h.next[i] = t
-	}
+	h := newInt32Node(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
-	t.flags.SetTrue(fullyLinked)
 	return &Int32Set{
 		header: h,
-		tail:   t,
 	}
 }
 
@@ -605,7 +587,7 @@ func (s *Int32Set) findNodeDelete(value int32, preds *[maxLevel]*int32Node, succ
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -613,7 +595,7 @@ func (s *Int32Set) findNodeDelete(value int32, preds *[maxLevel]*int32Node, succ
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.equal(value) {
+		if lFound == -1 && succ != nil && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -626,7 +608,7 @@ func (s *Int32Set) findNodeInsert(value int32, preds *[maxLevel]*int32Node, succ
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -634,7 +616,7 @@ func (s *Int32Set) findNodeInsert(value int32, preds *[maxLevel]*int32Node, succ
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.equal(value) {
+		if succ != nil && succ.equal(value) {
 			return i
 		}
 	}
@@ -691,7 +673,7 @@ func (s *Int32Set) Insert(value int32) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && (succ == nil || !succ.flags.Get(marked)) && pred.loadNext(layer) == succ
 		}
 		if !valid {
 			unlockInt32(preds, highestLocked)
@@ -715,13 +697,13 @@ func (s *Int32Set) Contains(value int32) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.lessthan(value) {
+		for nex != nil && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.equal(value) {
+		if nex != nil && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -795,7 +777,7 @@ func (s *Int32Set) Delete(value int32) bool {
 // If f returns false, range stops the iteration.
 func (s *Int32Set) Range(f func(value int32) bool) {
 	x := s.header.loadNext(0)
-	for x != s.tail {
+	for x != nil {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
@@ -817,7 +799,6 @@ func (s *Int32Set) Len() int {
 // Int16Set represents a set based on skip list in ascending order.
 type Int16Set struct {
 	header *int16Node
-	tail   *int16Node
 	length int64
 }
 
@@ -855,15 +836,10 @@ func (n *int16Node) equal(value int16) bool {
 
 // NewInt16 return an empty int16 skip set.
 func NewInt16() *Int16Set {
-	h, t := newInt16Node(0, maxLevel), newInt16Node(0, maxLevel)
-	for i := 0; i < maxLevel; i++ {
-		h.next[i] = t
-	}
+	h := newInt16Node(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
-	t.flags.SetTrue(fullyLinked)
 	return &Int16Set{
 		header: h,
-		tail:   t,
 	}
 }
 
@@ -874,7 +850,7 @@ func (s *Int16Set) findNodeDelete(value int16, preds *[maxLevel]*int16Node, succ
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -882,7 +858,7 @@ func (s *Int16Set) findNodeDelete(value int16, preds *[maxLevel]*int16Node, succ
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.equal(value) {
+		if lFound == -1 && succ != nil && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -895,7 +871,7 @@ func (s *Int16Set) findNodeInsert(value int16, preds *[maxLevel]*int16Node, succ
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -903,7 +879,7 @@ func (s *Int16Set) findNodeInsert(value int16, preds *[maxLevel]*int16Node, succ
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.equal(value) {
+		if succ != nil && succ.equal(value) {
 			return i
 		}
 	}
@@ -960,7 +936,7 @@ func (s *Int16Set) Insert(value int16) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && (succ == nil || !succ.flags.Get(marked)) && pred.loadNext(layer) == succ
 		}
 		if !valid {
 			unlockInt16(preds, highestLocked)
@@ -984,13 +960,13 @@ func (s *Int16Set) Contains(value int16) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.lessthan(value) {
+		for nex != nil && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.equal(value) {
+		if nex != nil && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -1064,7 +1040,7 @@ func (s *Int16Set) Delete(value int16) bool {
 // If f returns false, range stops the iteration.
 func (s *Int16Set) Range(f func(value int16) bool) {
 	x := s.header.loadNext(0)
-	for x != s.tail {
+	for x != nil {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
@@ -1086,7 +1062,6 @@ func (s *Int16Set) Len() int {
 // IntSet represents a set based on skip list in ascending order.
 type IntSet struct {
 	header *intNode
-	tail   *intNode
 	length int64
 }
 
@@ -1124,15 +1099,10 @@ func (n *intNode) equal(value int) bool {
 
 // NewInt return an empty int skip set.
 func NewInt() *IntSet {
-	h, t := newIntNode(0, maxLevel), newIntNode(0, maxLevel)
-	for i := 0; i < maxLevel; i++ {
-		h.next[i] = t
-	}
+	h := newIntNode(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
-	t.flags.SetTrue(fullyLinked)
 	return &IntSet{
 		header: h,
-		tail:   t,
 	}
 }
 
@@ -1143,7 +1113,7 @@ func (s *IntSet) findNodeDelete(value int, preds *[maxLevel]*intNode, succs *[ma
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -1151,7 +1121,7 @@ func (s *IntSet) findNodeDelete(value int, preds *[maxLevel]*intNode, succs *[ma
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.equal(value) {
+		if lFound == -1 && succ != nil && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -1164,7 +1134,7 @@ func (s *IntSet) findNodeInsert(value int, preds *[maxLevel]*intNode, succs *[ma
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -1172,7 +1142,7 @@ func (s *IntSet) findNodeInsert(value int, preds *[maxLevel]*intNode, succs *[ma
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.equal(value) {
+		if succ != nil && succ.equal(value) {
 			return i
 		}
 	}
@@ -1229,7 +1199,7 @@ func (s *IntSet) Insert(value int) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && (succ == nil || !succ.flags.Get(marked)) && pred.loadNext(layer) == succ
 		}
 		if !valid {
 			unlockInt(preds, highestLocked)
@@ -1253,13 +1223,13 @@ func (s *IntSet) Contains(value int) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.lessthan(value) {
+		for nex != nil && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.equal(value) {
+		if nex != nil && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -1333,7 +1303,7 @@ func (s *IntSet) Delete(value int) bool {
 // If f returns false, range stops the iteration.
 func (s *IntSet) Range(f func(value int) bool) {
 	x := s.header.loadNext(0)
-	for x != s.tail {
+	for x != nil {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
@@ -1355,7 +1325,6 @@ func (s *IntSet) Len() int {
 // Uint64Set represents a set based on skip list in ascending order.
 type Uint64Set struct {
 	header *uint64Node
-	tail   *uint64Node
 	length int64
 }
 
@@ -1393,15 +1362,10 @@ func (n *uint64Node) equal(value uint64) bool {
 
 // NewUint64 return an empty uint64 skip set.
 func NewUint64() *Uint64Set {
-	h, t := newUint64Node(0, maxLevel), newUint64Node(0, maxLevel)
-	for i := 0; i < maxLevel; i++ {
-		h.next[i] = t
-	}
+	h := newUint64Node(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
-	t.flags.SetTrue(fullyLinked)
 	return &Uint64Set{
 		header: h,
-		tail:   t,
 	}
 }
 
@@ -1412,7 +1376,7 @@ func (s *Uint64Set) findNodeDelete(value uint64, preds *[maxLevel]*uint64Node, s
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -1420,7 +1384,7 @@ func (s *Uint64Set) findNodeDelete(value uint64, preds *[maxLevel]*uint64Node, s
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.equal(value) {
+		if lFound == -1 && succ != nil && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -1433,7 +1397,7 @@ func (s *Uint64Set) findNodeInsert(value uint64, preds *[maxLevel]*uint64Node, s
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -1441,7 +1405,7 @@ func (s *Uint64Set) findNodeInsert(value uint64, preds *[maxLevel]*uint64Node, s
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.equal(value) {
+		if succ != nil && succ.equal(value) {
 			return i
 		}
 	}
@@ -1498,7 +1462,7 @@ func (s *Uint64Set) Insert(value uint64) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && (succ == nil || !succ.flags.Get(marked)) && pred.loadNext(layer) == succ
 		}
 		if !valid {
 			unlockUint64(preds, highestLocked)
@@ -1522,13 +1486,13 @@ func (s *Uint64Set) Contains(value uint64) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.lessthan(value) {
+		for nex != nil && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.equal(value) {
+		if nex != nil && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -1602,7 +1566,7 @@ func (s *Uint64Set) Delete(value uint64) bool {
 // If f returns false, range stops the iteration.
 func (s *Uint64Set) Range(f func(value uint64) bool) {
 	x := s.header.loadNext(0)
-	for x != s.tail {
+	for x != nil {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
@@ -1624,7 +1588,6 @@ func (s *Uint64Set) Len() int {
 // Uint32Set represents a set based on skip list in ascending order.
 type Uint32Set struct {
 	header *uint32Node
-	tail   *uint32Node
 	length int64
 }
 
@@ -1662,15 +1625,10 @@ func (n *uint32Node) equal(value uint32) bool {
 
 // NewUint32 return an empty uint32 skip set.
 func NewUint32() *Uint32Set {
-	h, t := newUint32Node(0, maxLevel), newUint32Node(0, maxLevel)
-	for i := 0; i < maxLevel; i++ {
-		h.next[i] = t
-	}
+	h := newUint32Node(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
-	t.flags.SetTrue(fullyLinked)
 	return &Uint32Set{
 		header: h,
-		tail:   t,
 	}
 }
 
@@ -1681,7 +1639,7 @@ func (s *Uint32Set) findNodeDelete(value uint32, preds *[maxLevel]*uint32Node, s
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -1689,7 +1647,7 @@ func (s *Uint32Set) findNodeDelete(value uint32, preds *[maxLevel]*uint32Node, s
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.equal(value) {
+		if lFound == -1 && succ != nil && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -1702,7 +1660,7 @@ func (s *Uint32Set) findNodeInsert(value uint32, preds *[maxLevel]*uint32Node, s
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -1710,7 +1668,7 @@ func (s *Uint32Set) findNodeInsert(value uint32, preds *[maxLevel]*uint32Node, s
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.equal(value) {
+		if succ != nil && succ.equal(value) {
 			return i
 		}
 	}
@@ -1767,7 +1725,7 @@ func (s *Uint32Set) Insert(value uint32) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && (succ == nil || !succ.flags.Get(marked)) && pred.loadNext(layer) == succ
 		}
 		if !valid {
 			unlockUint32(preds, highestLocked)
@@ -1791,13 +1749,13 @@ func (s *Uint32Set) Contains(value uint32) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.lessthan(value) {
+		for nex != nil && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.equal(value) {
+		if nex != nil && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -1871,7 +1829,7 @@ func (s *Uint32Set) Delete(value uint32) bool {
 // If f returns false, range stops the iteration.
 func (s *Uint32Set) Range(f func(value uint32) bool) {
 	x := s.header.loadNext(0)
-	for x != s.tail {
+	for x != nil {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
@@ -1893,7 +1851,6 @@ func (s *Uint32Set) Len() int {
 // Uint16Set represents a set based on skip list in ascending order.
 type Uint16Set struct {
 	header *uint16Node
-	tail   *uint16Node
 	length int64
 }
 
@@ -1931,15 +1888,10 @@ func (n *uint16Node) equal(value uint16) bool {
 
 // NewUint16 return an empty uint16 skip set.
 func NewUint16() *Uint16Set {
-	h, t := newUint16Node(0, maxLevel), newUint16Node(0, maxLevel)
-	for i := 0; i < maxLevel; i++ {
-		h.next[i] = t
-	}
+	h := newUint16Node(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
-	t.flags.SetTrue(fullyLinked)
 	return &Uint16Set{
 		header: h,
-		tail:   t,
 	}
 }
 
@@ -1950,7 +1902,7 @@ func (s *Uint16Set) findNodeDelete(value uint16, preds *[maxLevel]*uint16Node, s
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -1958,7 +1910,7 @@ func (s *Uint16Set) findNodeDelete(value uint16, preds *[maxLevel]*uint16Node, s
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.equal(value) {
+		if lFound == -1 && succ != nil && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -1971,7 +1923,7 @@ func (s *Uint16Set) findNodeInsert(value uint16, preds *[maxLevel]*uint16Node, s
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -1979,7 +1931,7 @@ func (s *Uint16Set) findNodeInsert(value uint16, preds *[maxLevel]*uint16Node, s
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.equal(value) {
+		if succ != nil && succ.equal(value) {
 			return i
 		}
 	}
@@ -2036,7 +1988,7 @@ func (s *Uint16Set) Insert(value uint16) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && (succ == nil || !succ.flags.Get(marked)) && pred.loadNext(layer) == succ
 		}
 		if !valid {
 			unlockUint16(preds, highestLocked)
@@ -2060,13 +2012,13 @@ func (s *Uint16Set) Contains(value uint16) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.lessthan(value) {
+		for nex != nil && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.equal(value) {
+		if nex != nil && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -2140,7 +2092,7 @@ func (s *Uint16Set) Delete(value uint16) bool {
 // If f returns false, range stops the iteration.
 func (s *Uint16Set) Range(f func(value uint16) bool) {
 	x := s.header.loadNext(0)
-	for x != s.tail {
+	for x != nil {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue
@@ -2162,7 +2114,6 @@ func (s *Uint16Set) Len() int {
 // UintSet represents a set based on skip list in ascending order.
 type UintSet struct {
 	header *uintNode
-	tail   *uintNode
 	length int64
 }
 
@@ -2200,15 +2151,10 @@ func (n *uintNode) equal(value uint) bool {
 
 // NewUint return an empty uint skip set.
 func NewUint() *UintSet {
-	h, t := newUintNode(0, maxLevel), newUintNode(0, maxLevel)
-	for i := 0; i < maxLevel; i++ {
-		h.next[i] = t
-	}
+	h := newUintNode(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
-	t.flags.SetTrue(fullyLinked)
 	return &UintSet{
 		header: h,
-		tail:   t,
 	}
 }
 
@@ -2219,7 +2165,7 @@ func (s *UintSet) findNodeDelete(value uint, preds *[maxLevel]*uintNode, succs *
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -2227,7 +2173,7 @@ func (s *UintSet) findNodeDelete(value uint, preds *[maxLevel]*uintNode, succs *
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.equal(value) {
+		if lFound == -1 && succ != nil && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -2240,7 +2186,7 @@ func (s *UintSet) findNodeInsert(value uint, preds *[maxLevel]*uintNode, succs *
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -2248,7 +2194,7 @@ func (s *UintSet) findNodeInsert(value uint, preds *[maxLevel]*uintNode, succs *
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.equal(value) {
+		if succ != nil && succ.equal(value) {
 			return i
 		}
 	}
@@ -2305,7 +2251,7 @@ func (s *UintSet) Insert(value uint) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && (succ == nil || !succ.flags.Get(marked)) && pred.loadNext(layer) == succ
 		}
 		if !valid {
 			unlockUint(preds, highestLocked)
@@ -2329,13 +2275,13 @@ func (s *UintSet) Contains(value uint) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.lessthan(value) {
+		for nex != nil && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.equal(value) {
+		if nex != nil && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -2409,7 +2355,7 @@ func (s *UintSet) Delete(value uint) bool {
 // If f returns false, range stops the iteration.
 func (s *UintSet) Range(f func(value uint) bool) {
 	x := s.header.loadNext(0)
-	for x != s.tail {
+	for x != nil {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue

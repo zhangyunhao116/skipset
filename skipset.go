@@ -12,7 +12,6 @@ import (
 // Int64Set represents a set based on skip list in ascending order.
 type Int64Set struct {
 	header *int64Node
-	tail   *int64Node
 	length int64
 }
 
@@ -50,15 +49,10 @@ func (n *int64Node) equal(value int64) bool {
 
 // NewInt64 return an empty int64 skip set.
 func NewInt64() *Int64Set {
-	h, t := newInt64Node(0, maxLevel), newInt64Node(0, maxLevel)
-	for i := 0; i < maxLevel; i++ {
-		h.next[i] = t
-	}
+	h := newInt64Node(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
-	t.flags.SetTrue(fullyLinked)
 	return &Int64Set{
 		header: h,
-		tail:   t,
 	}
 }
 
@@ -69,7 +63,7 @@ func (s *Int64Set) findNodeDelete(value int64, preds *[maxLevel]*int64Node, succ
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -77,7 +71,7 @@ func (s *Int64Set) findNodeDelete(value int64, preds *[maxLevel]*int64Node, succ
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.equal(value) {
+		if lFound == -1 && succ != nil && succ.equal(value) {
 			lFound = i
 		}
 	}
@@ -90,7 +84,7 @@ func (s *Int64Set) findNodeInsert(value int64, preds *[maxLevel]*int64Node, succ
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.lessthan(value) {
+		for succ != nil && succ.lessthan(value) {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -98,7 +92,7 @@ func (s *Int64Set) findNodeInsert(value int64, preds *[maxLevel]*int64Node, succ
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != s.tail && succ.equal(value) {
+		if succ != nil && succ.equal(value) {
 			return i
 		}
 	}
@@ -155,7 +149,7 @@ func (s *Int64Set) Insert(value int64) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && (succ == nil || !succ.flags.Get(marked)) && pred.loadNext(layer) == succ
 		}
 		if !valid {
 			unlockInt64(preds, highestLocked)
@@ -179,13 +173,13 @@ func (s *Int64Set) Contains(value int64) bool {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.lessthan(value) {
+		for nex != nil && nex.lessthan(value) {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != s.tail && nex.equal(value) {
+		if nex != nil && nex.equal(value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -259,7 +253,7 @@ func (s *Int64Set) Delete(value int64) bool {
 // If f returns false, range stops the iteration.
 func (s *Int64Set) Range(f func(value int64) bool) {
 	x := s.header.loadNext(0)
-	for x != s.tail {
+	for x != nil {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue

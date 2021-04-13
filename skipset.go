@@ -47,7 +47,7 @@ func (n *int64Node) equal(value int64) bool {
 	return n.value == value
 }
 
-// NewInt64 return an empty int64 skip set.
+// NewInt64 return an empty int64 skip set in ascending order.
 func NewInt64() *Int64Set {
 	h := newInt64Node(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)

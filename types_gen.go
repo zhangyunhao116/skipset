@@ -51,6 +51,35 @@ func main() {
 		w.WriteString("\r\n")
 	}
 
+	// For desdending order.
+	for _, upper := range append(ts, "Int64") {
+		lower := strings.ToLower(upper)
+		data := string(filedata)
+		// Remove header.
+		data = data[strings.Index(data, ")\n")+1:]
+		// Remove the special case.
+		data = strings.Replace(data, lengthFunction, "", -1)
+		// DESC. (DIFF)
+		data = strings.Replace(data, "ascending", "desdending", -1)
+		data = strings.Replace(data, "NewInt64", "NewInt64Desc", -1)
+		data = strings.Replace(data, "unlockInt64", "unlockInt64Desc", -1)
+		data = strings.Replace(data, "Int64Set", "Int64SetDesc", -1)
+		data = strings.Replace(data, "Int64Node", "Int64NodeDesc", -1)
+		data = strings.Replace(data, "int64Node", "int64NodeDesc", -1)
+		data = strings.Replace(data, "return n.value < value", "return n.value > value", -1)
+		// Common cases.
+		data = strings.Replace(data, "int64", lower, -1)
+		data = strings.Replace(data, "Int64", upper, -1)
+		if inSlice(lowerSlice(ts), lower) {
+			data = strings.Replace(data, "length "+lower, "length int64", 1)
+			data = strings.Replace(data, "atomic.Add"+upper, "atomic.AddInt64", -1)
+		}
+		// Add the special case. (DIFF)
+		data = data + strings.Replace(lengthFunction, "Int64Set", upper+"SetDesc", 1)
+		w.WriteString(data)
+		w.WriteString("\r\n")
+	}
+
 	out, err := format.Source(w.Bytes())
 	if err != nil {
 		panic(err)

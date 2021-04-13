@@ -219,7 +219,7 @@ func TestIntSet(t *testing.T) {
 	// Concurrent Add and Remove in small zone.
 	x = NewInt()
 	var (
-		addcount uint64 = 0
+		addcount    uint64 = 0
 		removecount uint64 = 0
 	)
 
@@ -254,6 +254,22 @@ func TestIntSet(t *testing.T) {
 			panic("invalid content")
 		}
 		pre = score
+		return true
+	})
+}
+
+func TestIntSetDesc(t *testing.T) {
+	s := NewIntDesc()
+	nums := []int{-1, 0, 5, 12}
+	for _, v := range nums {
+		s.Add(v)
+	}
+	i := len(nums) - 1
+	s.Range(func(value int) bool {
+		if nums[i] != value {
+			t.Fatal("error")
+		}
+		i--
 		return true
 	})
 }

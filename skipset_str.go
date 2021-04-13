@@ -12,8 +12,8 @@ func hash(s string) uint64 {
 	return wyhash.Sum64String(s)
 }
 
-// StringSet represents a set based on skip list in ascending order.
-// It base on Uint64Set.
+// StringSet represents a set based on skip list.
+// It based on Uint64Set.
 type StringSet struct {
 	header *stringNode
 	tail   *stringNode
@@ -36,12 +36,12 @@ func newStringNode(value string, level int) *stringNode {
 	}
 }
 
-// return n.next[i]
+// return n.next[i](atomic)
 func (n *stringNode) loadNext(i int) *stringNode {
 	return (*stringNode)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i]))))
 }
 
-// n.next[i] = node
+// n.next[i] = node(atomic)
 func (n *stringNode) storeNext(i int, node *stringNode) {
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&n.next[i])), unsafe.Pointer(node))
 }
@@ -94,7 +94,7 @@ func (s *StringSet) findNodeRemove(value string, preds *[maxLevel]*stringNode, s
 }
 
 // findNodeAdd takes a score and two maximal-height arrays then searches exactly as in a sequential skip-set.
-// The returned preds and succs always satisfy preds[i] > score > succs[i].
+// The returned preds and succs always satisfy preds[i] > score >= succs[i].
 func (s *StringSet) findNodeAdd(value string, preds *[maxLevel]*stringNode, succs *[maxLevel]*stringNode) int {
 	// lFound represents the index of the first layer at which it found a node.
 	score := hash(value)
@@ -166,7 +166,7 @@ func (s *StringSet) Add(value string) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.next[layer] == succ
 		}
 		if !valid {
 			unlockString(preds, highestLocked)
@@ -247,7 +247,7 @@ func (s *StringSet) Remove(value string) bool {
 				// It is valid if:
 				// 1. the previous node exists.
 				// 2. no another node has inserted into the skip list in this layer.
-				valid = !pred.flags.Get(marked) && pred.loadNext(layer) == succ
+				valid = !pred.flags.Get(marked) && pred.next[layer] == succ
 			}
 			if !valid {
 				unlockString(preds, highestLocked)

@@ -7,16 +7,16 @@ import (
 	"testing"
 )
 
-const initsize = 1 << 10 // for `contains` `1Delete9Insert90Contains` `1Range9Delete90Insert900Contains`
+const initsize = 1 << 10 // for `contains` `1Remove9Add90Contains` `1Range9Remove90Add900Contains`
 const randN = math.MaxUint32
 
-func BenchmarkInsert(b *testing.B) {
+func BenchmarkAdd(b *testing.B) {
 	b.Run("skipset", func(b *testing.B) {
 		l := NewInt64()
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				l.Insert(int64(fastrandn(randN)))
+				l.Add(int64(fastrandn(randN)))
 			}
 		})
 	})
@@ -35,7 +35,7 @@ func BenchmarkContains100Hits(b *testing.B) {
 	b.Run("skipset", func(b *testing.B) {
 		l := NewInt64()
 		for i := 0; i < initsize; i++ {
-			l.Insert(int64(i))
+			l.Add(int64(i))
 		}
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
@@ -64,7 +64,7 @@ func BenchmarkContains50Hits(b *testing.B) {
 		l := NewInt64()
 		for i := 0; i < initsize*rate; i++ {
 			if fastrandn(rate) == 0 {
-				l.Insert(int64(i))
+				l.Add(int64(i))
 			}
 		}
 		b.ResetTimer()
@@ -96,7 +96,7 @@ func BenchmarkContainsNoHits(b *testing.B) {
 		invalid := make([]int64, 0, initsize)
 		for i := 0; i < initsize*2; i++ {
 			if i%2 == 0 {
-				l.Insert(int64(i))
+				l.Add(int64(i))
 			} else {
 				invalid = append(invalid, int64(i))
 			}
@@ -127,7 +127,7 @@ func BenchmarkContainsNoHits(b *testing.B) {
 	})
 }
 
-func Benchmark50Insert50Contains(b *testing.B) {
+func Benchmark50Add50Contains(b *testing.B) {
 	b.Run("skipset", func(b *testing.B) {
 		l := NewInt64()
 		b.ResetTimer()
@@ -135,7 +135,7 @@ func Benchmark50Insert50Contains(b *testing.B) {
 			for pb.Next() {
 				u := fastrandn(10)
 				if u < 5 {
-					l.Insert(int64(fastrandn(randN)))
+					l.Add(int64(fastrandn(randN)))
 				} else {
 					l.Contains(int64(fastrandn(randN)))
 				}
@@ -158,7 +158,7 @@ func Benchmark50Insert50Contains(b *testing.B) {
 	})
 }
 
-func Benchmark30Insert70Contains(b *testing.B) {
+func Benchmark30Add70Contains(b *testing.B) {
 	b.Run("skipset", func(b *testing.B) {
 		l := NewInt64()
 		b.ResetTimer()
@@ -166,7 +166,7 @@ func Benchmark30Insert70Contains(b *testing.B) {
 			for pb.Next() {
 				u := fastrandn(10)
 				if u < 3 {
-					l.Insert(int64(fastrandn(randN)))
+					l.Add(int64(fastrandn(randN)))
 				} else {
 					l.Contains(int64(fastrandn(randN)))
 				}
@@ -189,20 +189,20 @@ func Benchmark30Insert70Contains(b *testing.B) {
 	})
 }
 
-func Benchmark1Delete9Insert90Contains(b *testing.B) {
+func Benchmark1Remove9Add90Contains(b *testing.B) {
 	b.Run("skipset", func(b *testing.B) {
 		l := NewInt64()
 		for i := 0; i < initsize; i++ {
-			l.Insert(int64(i))
+			l.Add(int64(i))
 		}
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
 				u := fastrandn(100)
 				if u < 9 {
-					l.Insert(int64(fastrandn(randN)))
+					l.Add(int64(fastrandn(randN)))
 				} else if u == 10 {
-					l.Delete(int64(fastrandn(randN)))
+					l.Remove(int64(fastrandn(randN)))
 				} else {
 					l.Contains(int64(fastrandn(randN)))
 				}
@@ -230,11 +230,11 @@ func Benchmark1Delete9Insert90Contains(b *testing.B) {
 	})
 }
 
-func Benchmark1Range9Delete90Insert900Contains(b *testing.B) {
+func Benchmark1Range9Remove90Add900Contains(b *testing.B) {
 	b.Run("skipset", func(b *testing.B) {
 		l := NewInt64()
 		for i := 0; i < initsize; i++ {
-			l.Insert(int64(i))
+			l.Add(int64(i))
 		}
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
@@ -245,9 +245,9 @@ func Benchmark1Range9Delete90Insert900Contains(b *testing.B) {
 						return true
 					})
 				} else if u > 10 && u < 20 {
-					l.Delete(int64(fastrandn(randN)))
+					l.Remove(int64(fastrandn(randN)))
 				} else if u >= 100 && u < 190 {
-					l.Insert(int64(fastrandn(randN)))
+					l.Add(int64(fastrandn(randN)))
 				} else {
 					l.Contains(int64(fastrandn(randN)))
 				}
@@ -279,13 +279,13 @@ func Benchmark1Range9Delete90Insert900Contains(b *testing.B) {
 	})
 }
 
-func BenchmarkStringInsert(b *testing.B) {
+func BenchmarkStringAdd(b *testing.B) {
 	b.Run("skipset", func(b *testing.B) {
 		l := NewString()
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				l.Insert(strconv.Itoa(int(fastrand())))
+				l.Add(strconv.Itoa(int(fastrand())))
 			}
 		})
 	})
@@ -306,7 +306,7 @@ func BenchmarkStringContains50Hits(b *testing.B) {
 		l := NewString()
 		for i := 0; i < initsize*rate; i++ {
 			if fastrandn(rate) == 0 {
-				l.Insert(strconv.Itoa(i))
+				l.Add(strconv.Itoa(i))
 			}
 		}
 		b.ResetTimer()
@@ -332,7 +332,7 @@ func BenchmarkStringContains50Hits(b *testing.B) {
 	})
 }
 
-func BenchmarkString30Insert70Contains(b *testing.B) {
+func BenchmarkString30Add70Contains(b *testing.B) {
 	b.Run("skipset", func(b *testing.B) {
 		l := NewString()
 		b.ResetTimer()
@@ -340,7 +340,7 @@ func BenchmarkString30Insert70Contains(b *testing.B) {
 			for pb.Next() {
 				u := fastrandn(10)
 				if u < 3 {
-					l.Insert(strconv.Itoa(int(fastrandn(randN))))
+					l.Add(strconv.Itoa(int(fastrandn(randN))))
 				} else {
 					l.Contains(strconv.Itoa(int(fastrandn(randN))))
 				}
@@ -363,20 +363,20 @@ func BenchmarkString30Insert70Contains(b *testing.B) {
 	})
 }
 
-func BenchmarkString1Delete9Insert90Contains(b *testing.B) {
+func BenchmarkString1Remove9Add90Contains(b *testing.B) {
 	b.Run("skipset", func(b *testing.B) {
 		l := NewString()
 		for i := 0; i < initsize; i++ {
-			l.Insert(strconv.Itoa(i))
+			l.Add(strconv.Itoa(i))
 		}
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
 				u := fastrandn(100)
 				if u < 9 {
-					l.Insert(strconv.Itoa(int(fastrandn(randN))))
+					l.Add(strconv.Itoa(int(fastrandn(randN))))
 				} else if u == 10 {
-					l.Delete(strconv.Itoa(int(fastrandn(randN))))
+					l.Remove(strconv.Itoa(int(fastrandn(randN))))
 				} else {
 					l.Contains(strconv.Itoa(int(fastrandn(randN))))
 				}
@@ -404,11 +404,11 @@ func BenchmarkString1Delete9Insert90Contains(b *testing.B) {
 	})
 }
 
-func BenchmarkString1Range9Delete90Insert900Contains(b *testing.B) {
+func BenchmarkString1Range9Remove90Add900Contains(b *testing.B) {
 	b.Run("skipset", func(b *testing.B) {
 		l := NewString()
 		for i := 0; i < initsize; i++ {
-			l.Insert(strconv.Itoa(i))
+			l.Add(strconv.Itoa(i))
 		}
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
@@ -419,9 +419,9 @@ func BenchmarkString1Range9Delete90Insert900Contains(b *testing.B) {
 						return true
 					})
 				} else if u > 10 && u < 20 {
-					l.Delete(strconv.Itoa(int(fastrandn(randN))))
+					l.Remove(strconv.Itoa(int(fastrandn(randN))))
 				} else if u >= 100 && u < 190 {
-					l.Insert(strconv.Itoa(int(fastrandn(randN))))
+					l.Add(strconv.Itoa(int(fastrandn(randN))))
 				} else {
 					l.Contains(strconv.Itoa(int(fastrandn(randN))))
 				}

@@ -1,5 +1,5 @@
 // Package skipset is a high-performance concurrent set based on skip list.
-// In typical pattern(one million operations, 90%CONTAINS 9%INSERT 1%DELETE),
+// In typical pattern(one million operations, 90%CONTAINS 9%Add 1%Remove),
 // the skipset up to 3x ~ 15x faster than the built-in sync.Map.
 package skipset
 
@@ -56,9 +56,9 @@ func NewInt64() *Int64Set {
 	}
 }
 
-// findNodeDelete takes a value and two maximal-height arrays then searches exactly as in a sequential skip-list.
+// findNodeRemove takes a value and two maximal-height arrays then searches exactly as in a sequential skip-list.
 // The returned preds and succs always satisfy preds[i] > value >= succs[i].
-func (s *Int64Set) findNodeDelete(value int64, preds *[maxLevel]*int64Node, succs *[maxLevel]*int64Node) int {
+func (s *Int64Set) findNodeRemove(value int64, preds *[maxLevel]*int64Node, succs *[maxLevel]*int64Node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
 	for i := maxLevel - 1; i >= 0; i-- {
@@ -78,9 +78,9 @@ func (s *Int64Set) findNodeDelete(value int64, preds *[maxLevel]*int64Node, succ
 	return lFound
 }
 
-// findNodeInsert takes a value and two maximal-height arrays then searches exactly as in a sequential skip-set.
+// findNodeAdd takes a value and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > value >= succs[i].
-func (s *Int64Set) findNodeInsert(value int64, preds *[maxLevel]*int64Node, succs *[maxLevel]*int64Node) int {
+func (s *Int64Set) findNodeAdd(value int64, preds *[maxLevel]*int64Node, succs *[maxLevel]*int64Node) int {
 	x := s.header
 	for i := maxLevel - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
@@ -109,15 +109,15 @@ func unlockInt64(preds [maxLevel]*int64Node, highestLevel int) {
 	}
 }
 
-// Insert insert the value into skip set, return true if this process insert the value into skip set,
+// Add add the value into skip set, return true if this process insert the value into skip set,
 // return false if this process can't insert this value, because another process has insert the same value.
 //
 // If the value is in the skip set but not fully linked, this process will wait until it is.
-func (s *Int64Set) Insert(value int64) bool {
+func (s *Int64Set) Add(value int64) bool {
 	level := randomLevel()
 	var preds, succs [maxLevel]*int64Node
 	for {
-		lFound := s.findNodeInsert(value, &preds, &succs)
+		lFound := s.findNodeAdd(value, &preds, &succs)
 		if lFound != -1 { // indicating the value is already in the skip-list
 			nodeFound := succs[lFound]
 			if !nodeFound.flags.Get(marked) {
@@ -186,29 +186,29 @@ func (s *Int64Set) Contains(value int64) bool {
 	return false
 }
 
-// Delete a node from the skip set.
-func (s *Int64Set) Delete(value int64) bool {
+// Remove a node from the skip set.
+func (s *Int64Set) Remove(value int64) bool {
 	var (
-		nodeToDelete *int64Node
+		nodeToRemove *int64Node
 		isMarked     bool // represents if this operation mark the node
 		topLayer     = -1
 		preds, succs [maxLevel]*int64Node
 	)
 	for {
-		lFound := s.findNodeDelete(value, &preds, &succs)
+		lFound := s.findNodeRemove(value, &preds, &succs)
 		if isMarked || // this process mark this node or we can find this node in the skip list
 			lFound != -1 && succs[lFound].flags.MGet(fullyLinked|marked, fullyLinked) && (len(succs[lFound].next)-1) == lFound {
 			if !isMarked { // we don't mark this node for now
-				nodeToDelete = succs[lFound]
+				nodeToRemove = succs[lFound]
 				topLayer = lFound
-				nodeToDelete.mu.Lock()
-				if nodeToDelete.flags.Get(marked) {
+				nodeToRemove.mu.Lock()
+				if nodeToRemove.flags.Get(marked) {
 					// The node is marked by another process,
 					// the physical deletion will be accomplished by another process.
-					nodeToDelete.mu.Unlock()
+					nodeToRemove.mu.Unlock()
 					return false
 				}
-				nodeToDelete.flags.SetTrue(marked)
+				nodeToRemove.flags.SetTrue(marked)
 				isMarked = true
 			}
 			// Accomplish the physical deletion.
@@ -225,7 +225,7 @@ func (s *Int64Set) Delete(value int64) bool {
 					prevPred = pred
 				}
 				// valid check if there is another node has inserted into the skip list in this layer
-				// during this process, or the previous is deleted by another process.
+				// during this process, or the previous is removed by another process.
 				// It is valid if:
 				// 1. the previous node exists.
 				// 2. no another node has inserted into the skip list in this layer.
@@ -236,11 +236,11 @@ func (s *Int64Set) Delete(value int64) bool {
 				continue
 			}
 			for i := topLayer; i >= 0; i-- {
-				// Now we own the `nodeToDelete`, no other goroutine will modify it.
-				// So we don't need `nodeToDelete.loadNext`
-				preds[i].storeNext(i, nodeToDelete.next[i])
+				// Now we own the `nodeToRemove`, no other goroutine will modify it.
+				// So we don't need `nodeToRemove.loadNext`
+				preds[i].storeNext(i, nodeToRemove.next[i])
 			}
-			nodeToDelete.mu.Unlock()
+			nodeToRemove.mu.Unlock()
 			unlockInt64(preds, highestLocked)
 			atomic.AddInt64(&s.length, -1)
 			return true

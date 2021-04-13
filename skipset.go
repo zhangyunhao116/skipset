@@ -149,7 +149,7 @@ func (s *Int64Set) Insert(value int64) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.flags.Get(marked) && (succ == nil || !succ.flags.Get(marked)) && pred.loadNext(layer) == succ
+			valid = !pred.flags.Get(marked) && (succ == nil || !succ.flags.Get(marked)) && pred.next[layer] == succ
 		}
 		if !valid {
 			unlockInt64(preds, highestLocked)
@@ -229,7 +229,7 @@ func (s *Int64Set) Delete(value int64) bool {
 				// It is valid if:
 				// 1. the previous node exists.
 				// 2. no another node has inserted into the skip list in this layer.
-				valid = !pred.flags.Get(marked) && pred.loadNext(layer) == succ
+				valid = !pred.flags.Get(marked) && pred.next[layer] == succ
 			}
 			if !valid {
 				unlockInt64(preds, highestLocked)

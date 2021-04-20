@@ -1,5 +1,5 @@
 // Package skipset is a high-performance concurrent set based on skip list.
-// In typical pattern(one million operations, 90%CONTAINS 9%Add 1%Remove),
+// In typical pattern(100000 operations, 90%CONTAINS 9%Add 1%Remove),
 // the skipset up to 3x ~ 15x faster than the built-in sync.Map.
 package skipset
 

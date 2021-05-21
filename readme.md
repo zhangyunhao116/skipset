@@ -4,33 +4,30 @@
 
 ## Introduction
 
-skipset is a high-performance concurrent set based on skip list. In typical pattern(100000 operations, 90%CONTAINS 9%ADD 1%REMOVE), the skipset up to 3x ~ 15x faster than the built-in sync.Map.
+skipset is a high-performance, scalable, concurrent-safe set based on skip-list. In the typical pattern(100000 operations, 90%CONTAINS 9%ADD 1%REMOVE), the skipset up to 15x faster than the built-in `sync.Map`.
 
 The main idea behind the skipset is [A Simple Optimistic Skiplist Algorithm](<https://people.csail.mit.edu/shanir/publications/LazySkipList.pdf>).
 
 Different from the sync.Map, the items in the skipset are always sorted, and the `Contains` and `Range` operations are wait-free (A goroutine is guaranteed to complete an operation as long as it keeps taking steps, regardless of the activity of other goroutines).
 
-
+The skipset is a set instead of a map, if you need a high-performance full replacement of `sync.Map`, see [skipmap](<https://github.com/zhangyunhao116/skipmap>).
 
 ## Features
 
-- Concurrent safe API with high-performance.
-- Wait-free Contains and Range operations.
+- Scalable, high-performance, concurrent-safe.
+- Wait-free Contains and Range operations (wait-free algorithms have stronger guarantees than lock-free).
 - Sorted items.
 
 
 
 ## When should you use skipset
 
-In these situations, `skipset` is better
+In most cases, `skipset` is better than `sync.Map`, especially in these situations: 
 
-- **Sorted elements is needed**.
-- **Concurrent calls multiple operations**. such as use both `Contains` and `Add` at the same time.
+- **Concurrent calls multiple operations**. Such as use both `Range` and `Add` at the same time, in this situation, use skipset can obtain very large improvement on performance.
 - **Memory intensive**. The skipset save at least 50% memory in the benchmark.
 
-In these situations, `sync.Map` is better
-
-- Only one goroutine access the set for most of the time, such as insert a batch of elements and then use only `Contains` (use built-in map is even better).
+If only one goroutine access the set for the most of the time, such as insert a batch of elements and then use only `Contains` or `Range`, use built-in map is better.
 
 
 

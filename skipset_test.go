@@ -256,6 +256,41 @@ func TestIntSet(t *testing.T) {
 		pre = score
 		return true
 	})
+
+	// Correctness 3.
+	s1 := NewUint64()
+	var s2 sync.Map
+	var counter uint64
+	for i := 0; i <= 10000; i++ {
+		wg.Add(1)
+		go func() {
+			if fastrandn(2) == 0 {
+				r := fastrand()
+				s1.Add(uint64(r))
+				s2.Store(uint64(r), nil)
+			} else {
+				r := atomic.AddUint64(&counter, 1)
+				s1.Add(uint64(r))
+				s2.Store(uint64(r), nil)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	s1.Range(func(value uint64) bool {
+		_, ok := s2.Load(value)
+		if !ok {
+			t.Fatal(value)
+		}
+		return true
+	})
+	s2.Range(func(key, value interface{}) bool {
+		k := key.(uint64)
+		if !s1.Contains(k) {
+			t.Fatal(value)
+		}
+		return true
+	})
 }
 
 func TestIntSetDesc(t *testing.T) {

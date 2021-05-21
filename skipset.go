@@ -1,6 +1,6 @@
 // Package skipset is a high-performance, scalable, concurrent-safe set based on skip-list.
-// In the typical pattern(100000 operations, 90%CONTAINS 9%Add 1%Remove), the skipset up
-// to 15x faster than the built-in sync.Map.
+// In the typical pattern(100000 operations, 90%CONTAINS 9%Add 1%Remove, 8C16T), the skipset 
+// up to 15x faster than the built-in sync.Map.
 package skipset
 
 import (

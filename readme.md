@@ -4,7 +4,7 @@
 
 ## Introduction
 
-skipset is a high-performance, scalable, concurrent-safe set based on skip-list. In the typical pattern(100000 operations, 90%CONTAINS 9%ADD 1%REMOVE), the skipset up to 15x faster than the built-in `sync.Map`.
+skipset is a high-performance, scalable, concurrent-safe set based on skip-list. In the typical pattern(100000 operations, 90%CONTAINS 9%ADD 1%REMOVE, 8C16T), the skipset up to 15x faster than the built-in `sync.Map`.
 
 The main idea behind the skipset is [A Simple Optimistic Skiplist Algorithm](<https://people.csail.mit.edu/shanir/publications/LazySkipList.pdf>).
 

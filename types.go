@@ -168,7 +168,7 @@ func (s *Float32Set) Add(value float32) bool {
 }
 
 func (s *Float32Set) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {
@@ -448,7 +448,7 @@ func (s *Float32SetDesc) Add(value float32) bool {
 }
 
 func (s *Float32SetDesc) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {
@@ -728,7 +728,7 @@ func (s *Float64Set) Add(value float64) bool {
 }
 
 func (s *Float64Set) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {
@@ -1008,7 +1008,7 @@ func (s *Float64SetDesc) Add(value float64) bool {
 }
 
 func (s *Float64SetDesc) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {
@@ -1288,7 +1288,7 @@ func (s *Int32Set) Add(value int32) bool {
 }
 
 func (s *Int32Set) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {
@@ -1568,7 +1568,7 @@ func (s *Int32SetDesc) Add(value int32) bool {
 }
 
 func (s *Int32SetDesc) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {
@@ -1848,7 +1848,7 @@ func (s *Int16Set) Add(value int16) bool {
 }
 
 func (s *Int16Set) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {
@@ -2128,7 +2128,7 @@ func (s *Int16SetDesc) Add(value int16) bool {
 }
 
 func (s *Int16SetDesc) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {
@@ -2408,7 +2408,7 @@ func (s *IntSet) Add(value int) bool {
 }
 
 func (s *IntSet) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {
@@ -2688,7 +2688,7 @@ func (s *IntSetDesc) Add(value int) bool {
 }
 
 func (s *IntSetDesc) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {
@@ -2968,7 +2968,7 @@ func (s *Uint64Set) Add(value uint64) bool {
 }
 
 func (s *Uint64Set) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {
@@ -3248,7 +3248,7 @@ func (s *Uint64SetDesc) Add(value uint64) bool {
 }
 
 func (s *Uint64SetDesc) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {
@@ -3528,7 +3528,7 @@ func (s *Uint32Set) Add(value uint32) bool {
 }
 
 func (s *Uint32Set) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {
@@ -3808,7 +3808,7 @@ func (s *Uint32SetDesc) Add(value uint32) bool {
 }
 
 func (s *Uint32SetDesc) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {
@@ -4088,7 +4088,7 @@ func (s *Uint16Set) Add(value uint16) bool {
 }
 
 func (s *Uint16Set) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {
@@ -4368,7 +4368,7 @@ func (s *Uint16SetDesc) Add(value uint16) bool {
 }
 
 func (s *Uint16SetDesc) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {
@@ -4648,7 +4648,7 @@ func (s *UintSet) Add(value uint) bool {
 }
 
 func (s *UintSet) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {
@@ -4928,7 +4928,7 @@ func (s *UintSetDesc) Add(value uint) bool {
 }
 
 func (s *UintSetDesc) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {

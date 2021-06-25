@@ -170,7 +170,7 @@ func (s *Int64Set) Add(value int64) bool {
 }
 
 func (s *Int64Set) randomlevel() int {
-	// Generate randomLevel.
+	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
 	for {

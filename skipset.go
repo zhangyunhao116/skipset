@@ -54,7 +54,7 @@ func NewInt64() *Int64Set {
 	h.flags.SetTrue(fullyLinked)
 	return &Int64Set{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 

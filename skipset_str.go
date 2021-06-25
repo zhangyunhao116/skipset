@@ -15,8 +15,9 @@ func hash(s string) uint64 {
 // StringSet represents a set based on skip list.
 // It based on Uint64Set.
 type StringSet struct {
-	header *stringNode
-	length int64
+	header       *stringNode
+	length       int64
+	highestLevel int64 // highest level for now
 }
 
 type stringNode struct {
@@ -60,7 +61,8 @@ func NewString() *StringSet {
 	h := newStringNode("", maxLevel)
 	h.flags.SetTrue(fullyLinked)
 	return &StringSet{
-		header: h,
+		header:       h,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -70,7 +72,7 @@ func (s *StringSet) findNodeRemove(value string, preds *[maxLevel]*stringNode, s
 	// lFound represents the index of the first layer at which it found a node.
 	score := hash(value)
 	lFound, x := -1, s.header
-	for i := maxLevel - 1; i >= 0; i-- {
+	for i := int(atomic.LoadInt64(&s.highestLevel)) - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
 		for succ != nil && succ.cmp(score, value) < 0 {
 			x = succ
@@ -93,7 +95,7 @@ func (s *StringSet) findNodeAdd(value string, preds *[maxLevel]*stringNode, succ
 	// lFound represents the index of the first layer at which it found a node.
 	score := hash(value)
 	x := s.header
-	for i := maxLevel - 1; i >= 0; i-- {
+	for i := int(atomic.LoadInt64(&s.highestLevel)) - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
 		for succ != nil && succ.cmp(score, value) < 0 {
 			x = succ
@@ -125,7 +127,7 @@ func unlockString(preds [maxLevel]*stringNode, highestLevel int) {
 //
 // If the score is in the skip set but not fully linked, this process will wait until it is.
 func (s *StringSet) Add(value string) bool {
-	level := randomLevel()
+	level := s.randomlevel()
 	var preds, succs [maxLevel]*stringNode
 	for {
 		lFound := s.findNodeAdd(value, &preds, &succs)
@@ -179,11 +181,27 @@ func (s *StringSet) Add(value string) bool {
 	}
 }
 
+func (s *StringSet) randomlevel() int {
+	// Generate random level.
+	level := randomLevel()
+	// Update highest level if possible.
+	for {
+		hl := atomic.LoadInt64(&s.highestLevel)
+		if int64(level) <= hl {
+			break
+		}
+		if atomic.CompareAndSwapInt64(&s.highestLevel, hl, int64(level)) {
+			break
+		}
+	}
+	return level
+}
+
 // Contains check if the score is in the skip set.
 func (s *StringSet) Contains(value string) bool {
 	score := hash(value)
 	x := s.header
-	for i := maxLevel - 1; i >= 0; i-- {
+	for i := int(atomic.LoadInt64(&s.highestLevel)) - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
 		for nex != nil && nex.cmp(score, value) < 0 {
 			x = nex

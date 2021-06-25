@@ -5,8 +5,9 @@ import (
 )
 
 const (
-	maxLevel = 16
-	p        = 0.25
+	maxLevel            = 16
+	p                   = 0.25
+	defaultHighestLevel = 3
 )
 
 //go:linkname fastrand runtime.fastrand

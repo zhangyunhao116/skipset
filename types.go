@@ -52,7 +52,7 @@ func NewFloat32() *Float32Set {
 	h.flags.SetTrue(fullyLinked)
 	return &Float32Set{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -332,7 +332,7 @@ func NewFloat32Desc() *Float32SetDesc {
 	h.flags.SetTrue(fullyLinked)
 	return &Float32SetDesc{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -612,7 +612,7 @@ func NewFloat64() *Float64Set {
 	h.flags.SetTrue(fullyLinked)
 	return &Float64Set{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -892,7 +892,7 @@ func NewFloat64Desc() *Float64SetDesc {
 	h.flags.SetTrue(fullyLinked)
 	return &Float64SetDesc{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -1172,7 +1172,7 @@ func NewInt32() *Int32Set {
 	h.flags.SetTrue(fullyLinked)
 	return &Int32Set{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -1452,7 +1452,7 @@ func NewInt32Desc() *Int32SetDesc {
 	h.flags.SetTrue(fullyLinked)
 	return &Int32SetDesc{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -1732,7 +1732,7 @@ func NewInt16() *Int16Set {
 	h.flags.SetTrue(fullyLinked)
 	return &Int16Set{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -2012,7 +2012,7 @@ func NewInt16Desc() *Int16SetDesc {
 	h.flags.SetTrue(fullyLinked)
 	return &Int16SetDesc{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -2292,7 +2292,7 @@ func NewInt() *IntSet {
 	h.flags.SetTrue(fullyLinked)
 	return &IntSet{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -2572,7 +2572,7 @@ func NewIntDesc() *IntSetDesc {
 	h.flags.SetTrue(fullyLinked)
 	return &IntSetDesc{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -2852,7 +2852,7 @@ func NewUint64() *Uint64Set {
 	h.flags.SetTrue(fullyLinked)
 	return &Uint64Set{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -3132,7 +3132,7 @@ func NewUint64Desc() *Uint64SetDesc {
 	h.flags.SetTrue(fullyLinked)
 	return &Uint64SetDesc{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -3412,7 +3412,7 @@ func NewUint32() *Uint32Set {
 	h.flags.SetTrue(fullyLinked)
 	return &Uint32Set{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -3692,7 +3692,7 @@ func NewUint32Desc() *Uint32SetDesc {
 	h.flags.SetTrue(fullyLinked)
 	return &Uint32SetDesc{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -3972,7 +3972,7 @@ func NewUint16() *Uint16Set {
 	h.flags.SetTrue(fullyLinked)
 	return &Uint16Set{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -4252,7 +4252,7 @@ func NewUint16Desc() *Uint16SetDesc {
 	h.flags.SetTrue(fullyLinked)
 	return &Uint16SetDesc{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -4532,7 +4532,7 @@ func NewUint() *UintSet {
 	h.flags.SetTrue(fullyLinked)
 	return &UintSet{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -4812,7 +4812,7 @@ func NewUintDesc() *UintSetDesc {
 	h.flags.SetTrue(fullyLinked)
 	return &UintSetDesc{
 		header:       h,
-		highestLevel: 3,
+		highestLevel: defaultHighestLevel,
 	}
 }
 

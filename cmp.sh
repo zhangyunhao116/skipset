@@ -1,0 +1,1 @@
+sh bench.sh > latest.txt && benchstat base.txt latest.txt

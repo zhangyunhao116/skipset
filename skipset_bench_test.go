@@ -317,3 +317,39 @@ func (m *stringSyncMap) Range(f func(value string) bool) {
 		return !f(key.(string))
 	})
 }
+
+type int64RWMap struct {
+	data map[int64]struct{}
+	mu   sync.RWMutex
+}
+
+func (m *int64RWMap) Add(x int64) bool {
+	m.mu.Lock()
+	m.data[x] = struct{}{}
+	m.mu.Unlock()
+	return true
+}
+
+func (m *int64RWMap) Contains(x int64) bool {
+	m.mu.RLock()
+	_, ok := m.data[x]
+	m.mu.RUnlock()
+	return ok
+}
+
+func (m *int64RWMap) Remove(x int64) bool {
+	m.mu.Lock()
+	delete(m.data, x)
+	m.mu.Unlock()
+	return true
+}
+
+func (m *int64RWMap) Range(f func(value int64) bool) {
+	m.mu.RLock()
+	for k := range m.data {
+		if !f(k) {
+			break
+		}
+	}
+	m.mu.RUnlock()
+}

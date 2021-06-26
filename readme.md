@@ -83,64 +83,74 @@ MEMORY: 16G x 2 (3200MHz)
 ![benchmark](https://raw.githubusercontent.com/zhangyunhao116/public-data/master/skipset-benchmark.png)
 
 ```shell
-$ go test -run=NOTEST -bench=. -benchtime=100000x -benchmem -count=10 -timeout=60m  > x.txt
+$ go test -run=NOTEST -bench=. -benchtime=100000x -benchmem -count=20 -timeout=60m  > x.txt
 $ benchstat x.txt
 ```
 
 ```
-name                                             time/op
-Add/skipset-16                                    113ns ±11%
-Add/sync.Map-16                                   682ns ± 5%
-Contains100Hits/skipset-16                       13.7ns ±13%
-Contains100Hits/sync.Map-16                      15.2ns ±17%
-Contains50Hits/skipset-16                        14.6ns ±24%
-Contains50Hits/sync.Map-16                       14.7ns ± 8%
-ContainsNoHits/skipset-16                        14.3ns ± 5%
-ContainsNoHits/sync.Map-16                       12.4ns ±15%
-50Add50Contains/skipset-16                       61.3ns ± 7%
-50Add50Contains/sync.Map-16                       572ns ± 7%
-30Add70Contains/skipset-16                       49.2ns ±14%
-30Add70Contains/sync.Map-16                       599ns ± 6%
-1Remove9Add90Contains/skipset-16                 36.6ns ±17%
-1Remove9Add90Contains/sync.Map-16                 496ns ± 6%
-1Range9Remove90Add900Contains/skipset-16         41.8ns ±10%
-1Range9Remove90Add900Contains/sync.Map-16        1.20µs ± 9%
-StringAdd/skipset-16                              142ns ± 7%
-StringAdd/sync.Map-16                             883ns ± 8%
-StringContains50Hits/skipset-16                  21.2ns ±16%
-StringContains50Hits/sync.Map-16                 20.8ns ± 5%
-String30Add70Contains/skipset-16                 69.1ns ±18%
-String30Add70Contains/sync.Map-16                 750ns ± 5%
-String1Remove9Add90Contains/skipset-16           39.3ns ±12%
-String1Remove9Add90Contains/sync.Map-16           619ns ± 3%
-String1Range9Remove90Add900Contains/skipset-16   44.6ns ±17%
-String1Range9Remove90Add900Contains/sync.Map-16  1.38µs ±10%
+name                                              time/op
+Int64/Add/skipset-16                               107ns ±12%
+Int64/Add/sync.Map-16                              679ns ± 5%
+Int64/Contains50Hits/skipset-16                   11.8ns ±18%
+Int64/Contains50Hits/sync.Map-16                  14.3ns ±19%
+Int64/30Add70Contains/skipset-16                  50.9ns ±18%
+Int64/30Add70Contains/sync.Map-16                  604ns ± 5%
+Int64/1Remove9Add90Contains/skipset-16            32.4ns ±15%
+Int64/1Remove9Add90Contains/sync.Map-16            487ns ± 5%
+Int64/1Range9Remove90Add900Contains/skipset-16    35.2ns ±10%
+Int64/1Range9Remove90Add900Contains/sync.Map-16   1.01µs ±18%
+String/Add/skipset-16                              147ns ± 7%
+String/Add/sync.Map-16                             876ns ± 5%
+String/Contains50Hits/skipset-16                  19.9ns ±15%
+String/Contains50Hits/sync.Map-16                 19.1ns ±16%
+String/30Add70Contains/skipset-16                 66.9ns ± 5%
+String/30Add70Contains/sync.Map-16                 754ns ± 4%
+String/1Remove9Add90Contains/skipset-16           40.7ns ±18%
+String/1Remove9Add90Contains/sync.Map-16           612ns ± 5%
+String/1Range9Remove90Add900Contains/skipset-16   44.0ns ±12%
+String/1Range9Remove90Add900Contains/sync.Map-16  1.24µs ±14%
 
-name                                             alloc/op
-Add/skipset-16                                    58.0B ± 0%
-Add/sync.Map-16                                    128B ± 0%
-Contains100Hits/skipset-16                        0.00B     
-Contains100Hits/sync.Map-16                       0.00B     
-Contains50Hits/skipset-16                         0.00B     
-Contains50Hits/sync.Map-16                        0.00B     
-ContainsNoHits/skipset-16                         0.00B     
-ContainsNoHits/sync.Map-16                        0.00B     
-50Add50Contains/skipset-16                        29.0B ± 0%
-50Add50Contains/sync.Map-16                       64.9B ± 6%
-30Add70Contains/skipset-16                        17.0B ± 0%
-30Add70Contains/sync.Map-16                       82.9B ±13%
-1Remove9Add90Contains/skipset-16                  5.00B ± 0%
-1Remove9Add90Contains/sync.Map-16                 55.6B ± 1%
-1Range9Remove90Add900Contains/skipset-16          5.00B ± 0%
-1Range9Remove90Add900Contains/sync.Map-16          302B ±10%
-StringAdd/skipset-16                              90.0B ± 0%
-StringAdd/sync.Map-16                              152B ± 0%
-StringContains50Hits/skipset-16                   3.00B ± 0%
-StringContains50Hits/sync.Map-16                  3.00B ± 0%
-String30Add70Contains/skipset-16                  38.0B ± 0%
-String30Add70Contains/sync.Map-16                 95.3B ± 5%
-String1Remove9Add90Contains/skipset-16            22.0B ± 0%
-String1Remove9Add90Contains/sync.Map-16           72.6B ± 2%
-String1Range9Remove90Add900Contains/skipset-16    22.0B ± 0%
-String1Range9Remove90Add900Contains/sync.Map-16    307B ±15%
+name                                              alloc/op
+Int64/Add/skipset-16                               58.0B ± 0%
+Int64/Add/sync.Map-16                               128B ± 1%
+Int64/Contains50Hits/skipset-16                    0.00B     
+Int64/Contains50Hits/sync.Map-16                   0.00B     
+Int64/30Add70Contains/skipset-16                   17.0B ± 0%
+Int64/30Add70Contains/sync.Map-16                  80.2B ±12%
+Int64/1Remove9Add90Contains/skipset-16             5.00B ± 0%
+Int64/1Remove9Add90Contains/sync.Map-16            57.6B ± 5%
+Int64/1Range9Remove90Add900Contains/skipset-16     5.00B ± 0%
+Int64/1Range9Remove90Add900Contains/sync.Map-16     258B ±26%
+String/Add/skipset-16                              90.0B ± 0%
+String/Add/sync.Map-16                              152B ± 0%
+String/Contains50Hits/skipset-16                   15.0B ± 0%
+String/Contains50Hits/sync.Map-16                  15.0B ± 0%
+String/30Add70Contains/skipset-16                  38.0B ± 0%
+String/30Add70Contains/sync.Map-16                 97.6B ±12%
+String/1Remove9Add90Contains/skipset-16            22.0B ± 0%
+String/1Remove9Add90Contains/sync.Map-16           74.0B ± 4%
+String/1Range9Remove90Add900Contains/skipset-16    22.0B ± 0%
+String/1Range9Remove90Add900Contains/sync.Map-16    273B ±21%
+
+name                                              allocs/op
+Int64/Add/skipset-16                                2.00 ± 0%
+Int64/Add/sync.Map-16                               4.00 ± 0%
+Int64/Contains50Hits/skipset-16                     0.00     
+Int64/Contains50Hits/sync.Map-16                    0.00     
+Int64/30Add70Contains/skipset-16                    0.00     
+Int64/30Add70Contains/sync.Map-16                   1.00 ± 0%
+Int64/1Remove9Add90Contains/skipset-16              0.00     
+Int64/1Remove9Add90Contains/sync.Map-16             0.00     
+Int64/1Range9Remove90Add900Contains/skipset-16      0.00     
+Int64/1Range9Remove90Add900Contains/sync.Map-16     0.00     
+String/Add/skipset-16                               3.00 ± 0%
+String/Add/sync.Map-16                              5.00 ± 0%
+String/Contains50Hits/skipset-16                    1.00 ± 0%
+String/Contains50Hits/sync.Map-16                   1.00 ± 0%
+String/30Add70Contains/skipset-16                   1.00 ± 0%
+String/30Add70Contains/sync.Map-16                  2.00 ± 0%
+String/1Remove9Add90Contains/skipset-16             1.00 ± 0%
+String/1Remove9Add90Contains/sync.Map-16            1.00 ± 0%
+String/1Range9Remove90Add900Contains/skipset-16     1.00 ± 0%
+String/1Range9Remove90Add900Contains/sync.Map-16    1.00 ± 0%
 ```

@@ -15,9 +15,9 @@ func hash(s string) uint64 {
 // StringSet represents a set based on skip list.
 // It based on Uint64Set.
 type StringSet struct {
-	header *stringNode
-	tail   *stringNode
-	length int64
+	header       *stringNode
+	length       int64
+	highestLevel int64 // highest level for now
 }
 
 type stringNode struct {
@@ -58,15 +58,11 @@ func (n *stringNode) cmp(score uint64, value string) int {
 
 // NewString return an empty string skip set.
 func NewString() *StringSet {
-	h, t := newStringNode("", maxLevel), newStringNode("", maxLevel)
-	for i := 0; i < maxLevel; i++ {
-		h.next[i] = t
-	}
+	h := newStringNode("", maxLevel)
 	h.flags.SetTrue(fullyLinked)
-	t.flags.SetTrue(fullyLinked)
 	return &StringSet{
-		header: h,
-		tail:   t,
+		header:       h,
+		highestLevel: defaultHighestLevel,
 	}
 }
 
@@ -76,9 +72,9 @@ func (s *StringSet) findNodeRemove(value string, preds *[maxLevel]*stringNode, s
 	// lFound represents the index of the first layer at which it found a node.
 	score := hash(value)
 	lFound, x := -1, s.header
-	for i := maxLevel - 1; i >= 0; i-- {
+	for i := int(atomic.LoadInt64(&s.highestLevel)) - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(score, value) < 0 {
+		for succ != nil && succ.cmp(score, value) < 0 {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -86,7 +82,7 @@ func (s *StringSet) findNodeRemove(value string, preds *[maxLevel]*stringNode, s
 		succs[i] = succ
 
 		// Check if the score already in the skip list.
-		if lFound == -1 && succ != s.tail && succ.cmp(score, value) == 0 {
+		if lFound == -1 && succ != nil && succ.cmp(score, value) == 0 {
 			lFound = i
 		}
 	}
@@ -99,9 +95,9 @@ func (s *StringSet) findNodeAdd(value string, preds *[maxLevel]*stringNode, succ
 	// lFound represents the index of the first layer at which it found a node.
 	score := hash(value)
 	x := s.header
-	for i := maxLevel - 1; i >= 0; i-- {
+	for i := int(atomic.LoadInt64(&s.highestLevel)) - 1; i >= 0; i-- {
 		succ := x.loadNext(i)
-		for succ != s.tail && succ.cmp(score, value) < 0 {
+		for succ != nil && succ.cmp(score, value) < 0 {
 			x = succ
 			succ = x.loadNext(i)
 		}
@@ -109,7 +105,7 @@ func (s *StringSet) findNodeAdd(value string, preds *[maxLevel]*stringNode, succ
 		succs[i] = succ
 
 		// Check if the score already in the skip list.
-		if succ != s.tail && succ.cmp(score, value) == 0 {
+		if succ != nil && succ.cmp(score, value) == 0 {
 			return i
 		}
 	}
@@ -131,7 +127,7 @@ func unlockString(preds [maxLevel]*stringNode, highestLevel int) {
 //
 // If the score is in the skip set but not fully linked, this process will wait until it is.
 func (s *StringSet) Add(value string) bool {
-	level := randomLevel()
+	level := s.randomlevel()
 	var preds, succs [maxLevel]*stringNode
 	for {
 		lFound := s.findNodeAdd(value, &preds, &succs)
@@ -166,7 +162,7 @@ func (s *StringSet) Add(value string) bool {
 			// It is valid if:
 			// 1. The previous node and next node both are not marked.
 			// 2. The previous node's next node is succ in this layer.
-			valid = !pred.flags.Get(marked) && !succ.flags.Get(marked) && pred.next[layer] == succ
+			valid = !pred.flags.Get(marked) && (succ == nil || !succ.flags.Get(marked)) && pred.next[layer] == succ
 		}
 		if !valid {
 			unlockString(preds, highestLocked)
@@ -185,19 +181,35 @@ func (s *StringSet) Add(value string) bool {
 	}
 }
 
+func (s *StringSet) randomlevel() int {
+	// Generate random level.
+	level := randomLevel()
+	// Update highest level if possible.
+	for {
+		hl := atomic.LoadInt64(&s.highestLevel)
+		if int64(level) <= hl {
+			break
+		}
+		if atomic.CompareAndSwapInt64(&s.highestLevel, hl, int64(level)) {
+			break
+		}
+	}
+	return level
+}
+
 // Contains check if the score is in the skip set.
 func (s *StringSet) Contains(value string) bool {
 	score := hash(value)
 	x := s.header
-	for i := maxLevel - 1; i >= 0; i-- {
+	for i := int(atomic.LoadInt64(&s.highestLevel)) - 1; i >= 0; i-- {
 		nex := x.loadNext(i)
-		for nex != s.tail && nex.cmp(score, value) < 0 {
+		for nex != nil && nex.cmp(score, value) < 0 {
 			x = nex
 			nex = x.loadNext(i)
 		}
 
 		// Check if the score already in the skip list.
-		if nex != s.tail && nex.cmp(score, value) == 0 {
+		if nex != nil && nex.cmp(score, value) == 0 {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -271,7 +283,7 @@ func (s *StringSet) Remove(value string) bool {
 // If f returns false, range stops the iteration.
 func (s *StringSet) Range(f func(value string) bool) {
 	x := s.header.loadNext(0)
-	for x != s.tail {
+	for x != nil {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
 			x = x.loadNext(0)
 			continue

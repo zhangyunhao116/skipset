@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+
+	"github.com/zhangyunhao116/fastrand"
 )
 
 const (
@@ -51,7 +53,7 @@ func benchAdd(b *testing.B, benchTasks []benchInt64Task) {
 			b.ResetTimer()
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					s.Add(int64(fastrandn(randN)))
+					s.Add(int64(fastrand.Uint32n(randN)))
 				}
 			})
 		})
@@ -64,14 +66,14 @@ func benchContains50Hits(b *testing.B, benchTasks []benchInt64Task) {
 			const rate = 2
 			s := v.New()
 			for i := 0; i < initsize*rate; i++ {
-				if fastrandn(rate) == 0 {
+				if fastrand.Uint32n(rate) == 0 {
 					s.Add(int64(i))
 				}
 			}
 			b.ResetTimer()
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					_ = s.Contains(int64(fastrandn(initsize * rate)))
+					_ = s.Contains(int64(fastrand.Uint32n(initsize * rate)))
 				}
 			})
 		})
@@ -85,11 +87,11 @@ func bench30Add70Contains(b *testing.B, benchTasks []benchInt64Task) {
 			b.ResetTimer()
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					u := fastrandn(10)
+					u := fastrand.Uint32n(10)
 					if u < 3 {
-						s.Add(int64(fastrandn(randN)))
+						s.Add(int64(fastrand.Uint32n(randN)))
 					} else {
-						s.Contains(int64(fastrandn(randN)))
+						s.Contains(int64(fastrand.Uint32n(randN)))
 					}
 				}
 			})
@@ -104,13 +106,13 @@ func bench1Remove9Add90Contains(b *testing.B, benchTasks []benchInt64Task) {
 			b.ResetTimer()
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					u := fastrandn(100)
+					u := fastrand.Uint32n(100)
 					if u < 9 {
-						s.Add(int64(fastrandn(randN)))
+						s.Add(int64(fastrand.Uint32n(randN)))
 					} else if u == 10 {
-						s.Remove(int64(fastrandn(randN)))
+						s.Remove(int64(fastrand.Uint32n(randN)))
 					} else {
-						s.Contains(int64(fastrandn(randN)))
+						s.Contains(int64(fastrand.Uint32n(randN)))
 					}
 				}
 			})
@@ -125,17 +127,17 @@ func bench1Range9Remove90Add900Contains(b *testing.B, benchTasks []benchInt64Tas
 			b.ResetTimer()
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					u := fastrandn(1000)
+					u := fastrand.Uint32n(1000)
 					if u == 0 {
 						s.Range(func(score int64) bool {
 							return true
 						})
 					} else if u > 10 && u < 20 {
-						s.Remove(int64(fastrandn(randN)))
+						s.Remove(int64(fastrand.Uint32n(randN)))
 					} else if u >= 100 && u < 190 {
-						s.Add(int64(fastrandn(randN)))
+						s.Add(int64(fastrand.Uint32n(randN)))
 					} else {
-						s.Contains(int64(fastrandn(randN)))
+						s.Contains(int64(fastrand.Uint32n(randN)))
 					}
 				}
 			})
@@ -150,7 +152,7 @@ func benchStringAdd(b *testing.B, benchTasks []benchStringTask) {
 			b.ResetTimer()
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					s.Add(strconv.Itoa(int(fastrandn(randN))))
+					s.Add(strconv.Itoa(int(fastrand.Uint32n(randN))))
 				}
 			})
 		})
@@ -163,14 +165,14 @@ func benchStringContains50Hits(b *testing.B, benchTasks []benchStringTask) {
 			const rate = 2
 			s := v.New()
 			for i := 0; i < initsize*rate; i++ {
-				if fastrandn(rate) == 0 {
-					s.Add(strconv.Itoa(int(fastrandn(randN))))
+				if fastrand.Uint32n(rate) == 0 {
+					s.Add(strconv.Itoa(int(fastrand.Uint32n(randN))))
 				}
 			}
 			b.ResetTimer()
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					_ = s.Contains(strconv.Itoa(int(fastrandn(randN))))
+					_ = s.Contains(strconv.Itoa(int(fastrand.Uint32n(randN))))
 				}
 			})
 		})
@@ -184,11 +186,11 @@ func benchString30Add70Contains(b *testing.B, benchTasks []benchStringTask) {
 			b.ResetTimer()
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					u := fastrandn(10)
+					u := fastrand.Uint32n(10)
 					if u < 3 {
-						s.Add(strconv.Itoa(int(fastrandn(randN))))
+						s.Add(strconv.Itoa(int(fastrand.Uint32n(randN))))
 					} else {
-						s.Contains(strconv.Itoa(int(fastrandn(randN))))
+						s.Contains(strconv.Itoa(int(fastrand.Uint32n(randN))))
 					}
 				}
 			})
@@ -203,13 +205,13 @@ func benchString1Remove9Add90Contains(b *testing.B, benchTasks []benchStringTask
 			b.ResetTimer()
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					u := fastrandn(100)
+					u := fastrand.Uint32n(100)
 					if u < 9 {
-						s.Add(strconv.Itoa(int(fastrandn(randN))))
+						s.Add(strconv.Itoa(int(fastrand.Uint32n(randN))))
 					} else if u == 10 {
-						s.Remove(strconv.Itoa(int(fastrandn(randN))))
+						s.Remove(strconv.Itoa(int(fastrand.Uint32n(randN))))
 					} else {
-						s.Contains(strconv.Itoa(int(fastrandn(randN))))
+						s.Contains(strconv.Itoa(int(fastrand.Uint32n(randN))))
 					}
 				}
 			})
@@ -224,17 +226,17 @@ func benchString1Range9Remove90Add900Contains(b *testing.B, benchTasks []benchSt
 			b.ResetTimer()
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					u := fastrandn(1000)
+					u := fastrand.Uint32n(1000)
 					if u == 0 {
 						s.Range(func(score string) bool {
 							return true
 						})
 					} else if u > 10 && u < 20 {
-						s.Remove(strconv.Itoa(int(fastrandn(randN))))
+						s.Remove(strconv.Itoa(int(fastrand.Uint32n(randN))))
 					} else if u >= 100 && u < 190 {
-						s.Add(strconv.Itoa(int(fastrandn(randN))))
+						s.Add(strconv.Itoa(int(fastrand.Uint32n(randN))))
 					} else {
-						s.Contains(strconv.Itoa(int(fastrandn(randN))))
+						s.Contains(strconv.Itoa(int(fastrand.Uint32n(randN))))
 					}
 				}
 			})

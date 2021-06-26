@@ -1,3 +1,5 @@
+github.com/zhangyunhao116/fastrand v0.1.0 h1:NBvafu24zKd6taYBVtw9MWyxkK/HSSVnFtxnPAprasw=
+github.com/zhangyunhao116/fastrand v0.1.0/go.mod h1:0v5KgHho0VE6HU192HnY15de/oDS8UrbBChIFjIhBtc=
 github.com/zhangyunhao116/sbconv v0.2.1 h1:9Z43QFpnkYNjCrRz8UR9ShVRVQ0OG5VtLKQ3mAL5zjU=
 github.com/zhangyunhao116/sbconv v0.2.1/go.mod h1:pdAXGnJGNM68XNdJOfGCelkEHgrQMWSeW/2/qKjuiQQ=
 github.com/zhangyunhao116/wyhash v0.3.2 h1:v2VfcnTCLWv0mjFNg6t2EcZAj8Y91fG7Vb004xHauXI=

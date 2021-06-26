@@ -67,7 +67,7 @@ func replace(data string, upper string, desc bool) string {
 
 	if desc {
 		// Special cases for DESC.
-		data = strings.Replace(data, "ascending", "desdending", -1)
+		data = strings.Replace(data, "ascending", "descending", -1)
 		data = strings.Replace(data, "return n.value < value", "return n.value > value", -1)
 	}
 	return data

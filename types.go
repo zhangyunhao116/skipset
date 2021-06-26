@@ -281,13 +281,11 @@ func (s *Float32Set) Range(f func(value float32) bool) {
 }
 
 // Len return the length of this skip set.
-// Keep in sync with types_gen.go:lengthFunction
-// Special case for code generation, Must in the tail of skipset.go.
 func (s *Float32Set) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
 
-// Float32SetDesc represents a set based on skip list in desdending order.
+// Float32SetDesc represents a set based on skip list in descending order.
 type Float32SetDesc struct {
 	header       *float32NodeDesc
 	length       int64
@@ -326,7 +324,7 @@ func (n *float32NodeDesc) equal(value float32) bool {
 	return n.value == value
 }
 
-// NewFloat32Desc return an empty float32 skip set in desdending order.
+// NewFloat32Desc return an empty float32 skip set in descending order.
 func NewFloat32Desc() *Float32SetDesc {
 	h := newFloat32NodeDesc(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
@@ -561,8 +559,6 @@ func (s *Float32SetDesc) Range(f func(value float32) bool) {
 }
 
 // Len return the length of this skip set.
-// Keep in sync with types_gen.go:lengthFunction
-// Special case for code generation, Must in the tail of skipset.go.
 func (s *Float32SetDesc) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
@@ -841,13 +837,11 @@ func (s *Float64Set) Range(f func(value float64) bool) {
 }
 
 // Len return the length of this skip set.
-// Keep in sync with types_gen.go:lengthFunction
-// Special case for code generation, Must in the tail of skipset.go.
 func (s *Float64Set) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
 
-// Float64SetDesc represents a set based on skip list in desdending order.
+// Float64SetDesc represents a set based on skip list in descending order.
 type Float64SetDesc struct {
 	header       *float64NodeDesc
 	length       int64
@@ -886,7 +880,7 @@ func (n *float64NodeDesc) equal(value float64) bool {
 	return n.value == value
 }
 
-// NewFloat64Desc return an empty float64 skip set in desdending order.
+// NewFloat64Desc return an empty float64 skip set in descending order.
 func NewFloat64Desc() *Float64SetDesc {
 	h := newFloat64NodeDesc(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
@@ -1121,8 +1115,6 @@ func (s *Float64SetDesc) Range(f func(value float64) bool) {
 }
 
 // Len return the length of this skip set.
-// Keep in sync with types_gen.go:lengthFunction
-// Special case for code generation, Must in the tail of skipset.go.
 func (s *Float64SetDesc) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
@@ -1401,13 +1393,11 @@ func (s *Int32Set) Range(f func(value int32) bool) {
 }
 
 // Len return the length of this skip set.
-// Keep in sync with types_gen.go:lengthFunction
-// Special case for code generation, Must in the tail of skipset.go.
 func (s *Int32Set) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
 
-// Int32SetDesc represents a set based on skip list in desdending order.
+// Int32SetDesc represents a set based on skip list in descending order.
 type Int32SetDesc struct {
 	header       *int32NodeDesc
 	length       int64
@@ -1446,7 +1436,7 @@ func (n *int32NodeDesc) equal(value int32) bool {
 	return n.value == value
 }
 
-// NewInt32Desc return an empty int32 skip set in desdending order.
+// NewInt32Desc return an empty int32 skip set in descending order.
 func NewInt32Desc() *Int32SetDesc {
 	h := newInt32NodeDesc(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
@@ -1681,8 +1671,6 @@ func (s *Int32SetDesc) Range(f func(value int32) bool) {
 }
 
 // Len return the length of this skip set.
-// Keep in sync with types_gen.go:lengthFunction
-// Special case for code generation, Must in the tail of skipset.go.
 func (s *Int32SetDesc) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
@@ -1961,13 +1949,11 @@ func (s *Int16Set) Range(f func(value int16) bool) {
 }
 
 // Len return the length of this skip set.
-// Keep in sync with types_gen.go:lengthFunction
-// Special case for code generation, Must in the tail of skipset.go.
 func (s *Int16Set) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
 
-// Int16SetDesc represents a set based on skip list in desdending order.
+// Int16SetDesc represents a set based on skip list in descending order.
 type Int16SetDesc struct {
 	header       *int16NodeDesc
 	length       int64
@@ -2006,7 +1992,7 @@ func (n *int16NodeDesc) equal(value int16) bool {
 	return n.value == value
 }
 
-// NewInt16Desc return an empty int16 skip set in desdending order.
+// NewInt16Desc return an empty int16 skip set in descending order.
 func NewInt16Desc() *Int16SetDesc {
 	h := newInt16NodeDesc(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
@@ -2241,8 +2227,6 @@ func (s *Int16SetDesc) Range(f func(value int16) bool) {
 }
 
 // Len return the length of this skip set.
-// Keep in sync with types_gen.go:lengthFunction
-// Special case for code generation, Must in the tail of skipset.go.
 func (s *Int16SetDesc) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
@@ -2521,13 +2505,11 @@ func (s *IntSet) Range(f func(value int) bool) {
 }
 
 // Len return the length of this skip set.
-// Keep in sync with types_gen.go:lengthFunction
-// Special case for code generation, Must in the tail of skipset.go.
 func (s *IntSet) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
 
-// IntSetDesc represents a set based on skip list in desdending order.
+// IntSetDesc represents a set based on skip list in descending order.
 type IntSetDesc struct {
 	header       *intNodeDesc
 	length       int64
@@ -2566,7 +2548,7 @@ func (n *intNodeDesc) equal(value int) bool {
 	return n.value == value
 }
 
-// NewIntDesc return an empty int skip set in desdending order.
+// NewIntDesc return an empty int skip set in descending order.
 func NewIntDesc() *IntSetDesc {
 	h := newIntNodeDesc(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
@@ -2801,8 +2783,6 @@ func (s *IntSetDesc) Range(f func(value int) bool) {
 }
 
 // Len return the length of this skip set.
-// Keep in sync with types_gen.go:lengthFunction
-// Special case for code generation, Must in the tail of skipset.go.
 func (s *IntSetDesc) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
@@ -3081,13 +3061,11 @@ func (s *Uint64Set) Range(f func(value uint64) bool) {
 }
 
 // Len return the length of this skip set.
-// Keep in sync with types_gen.go:lengthFunction
-// Special case for code generation, Must in the tail of skipset.go.
 func (s *Uint64Set) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
 
-// Uint64SetDesc represents a set based on skip list in desdending order.
+// Uint64SetDesc represents a set based on skip list in descending order.
 type Uint64SetDesc struct {
 	header       *uint64NodeDesc
 	length       int64
@@ -3126,7 +3104,7 @@ func (n *uint64NodeDesc) equal(value uint64) bool {
 	return n.value == value
 }
 
-// NewUint64Desc return an empty uint64 skip set in desdending order.
+// NewUint64Desc return an empty uint64 skip set in descending order.
 func NewUint64Desc() *Uint64SetDesc {
 	h := newUuint64NodeDescDesc(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
@@ -3361,8 +3339,6 @@ func (s *Uint64SetDesc) Range(f func(value uint64) bool) {
 }
 
 // Len return the length of this skip set.
-// Keep in sync with types_gen.go:lengthFunction
-// Special case for code generation, Must in the tail of skipset.go.
 func (s *Uint64SetDesc) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
@@ -3641,13 +3617,11 @@ func (s *Uint32Set) Range(f func(value uint32) bool) {
 }
 
 // Len return the length of this skip set.
-// Keep in sync with types_gen.go:lengthFunction
-// Special case for code generation, Must in the tail of skipset.go.
 func (s *Uint32Set) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
 
-// Uint32SetDesc represents a set based on skip list in desdending order.
+// Uint32SetDesc represents a set based on skip list in descending order.
 type Uint32SetDesc struct {
 	header       *uint32NodeDesc
 	length       int64
@@ -3686,7 +3660,7 @@ func (n *uint32NodeDesc) equal(value uint32) bool {
 	return n.value == value
 }
 
-// NewUint32Desc return an empty uint32 skip set in desdending order.
+// NewUint32Desc return an empty uint32 skip set in descending order.
 func NewUint32Desc() *Uint32SetDesc {
 	h := newUint32NodeDesc(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
@@ -3921,8 +3895,6 @@ func (s *Uint32SetDesc) Range(f func(value uint32) bool) {
 }
 
 // Len return the length of this skip set.
-// Keep in sync with types_gen.go:lengthFunction
-// Special case for code generation, Must in the tail of skipset.go.
 func (s *Uint32SetDesc) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
@@ -4201,13 +4173,11 @@ func (s *Uint16Set) Range(f func(value uint16) bool) {
 }
 
 // Len return the length of this skip set.
-// Keep in sync with types_gen.go:lengthFunction
-// Special case for code generation, Must in the tail of skipset.go.
 func (s *Uint16Set) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
 
-// Uint16SetDesc represents a set based on skip list in desdending order.
+// Uint16SetDesc represents a set based on skip list in descending order.
 type Uint16SetDesc struct {
 	header       *uint16NodeDesc
 	length       int64
@@ -4246,7 +4216,7 @@ func (n *uint16NodeDesc) equal(value uint16) bool {
 	return n.value == value
 }
 
-// NewUint16Desc return an empty uint16 skip set in desdending order.
+// NewUint16Desc return an empty uint16 skip set in descending order.
 func NewUint16Desc() *Uint16SetDesc {
 	h := newUint16NodeDesc(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
@@ -4481,8 +4451,6 @@ func (s *Uint16SetDesc) Range(f func(value uint16) bool) {
 }
 
 // Len return the length of this skip set.
-// Keep in sync with types_gen.go:lengthFunction
-// Special case for code generation, Must in the tail of skipset.go.
 func (s *Uint16SetDesc) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
@@ -4761,13 +4729,11 @@ func (s *UintSet) Range(f func(value uint) bool) {
 }
 
 // Len return the length of this skip set.
-// Keep in sync with types_gen.go:lengthFunction
-// Special case for code generation, Must in the tail of skipset.go.
 func (s *UintSet) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }
 
-// UintSetDesc represents a set based on skip list in desdending order.
+// UintSetDesc represents a set based on skip list in descending order.
 type UintSetDesc struct {
 	header       *uintNodeDesc
 	length       int64
@@ -4806,7 +4772,7 @@ func (n *uintNodeDesc) equal(value uint) bool {
 	return n.value == value
 }
 
-// NewUintDesc return an empty uint skip set in desdending order.
+// NewUintDesc return an empty uint skip set in descending order.
 func NewUintDesc() *UintSetDesc {
 	h := newUintNodeDesc(0, maxLevel)
 	h.flags.SetTrue(fullyLinked)
@@ -5041,8 +5007,6 @@ func (s *UintSetDesc) Range(f func(value uint) bool) {
 }
 
 // Len return the length of this skip set.
-// Keep in sync with types_gen.go:lengthFunction
-// Special case for code generation, Must in the tail of skipset.go.
 func (s *UintSetDesc) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }

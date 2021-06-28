@@ -4,6 +4,7 @@ import (
 	_ "unsafe" // for linkname
 
 	"github.com/zhangyunhao116/fastrand"
+	"github.com/zhangyunhao116/wyhash"
 )
 
 const (
@@ -14,6 +15,10 @@ const (
 
 //go:linkname cmpstring runtime.cmpstring
 func cmpstring(a, b string) int
+
+func hash(s string) uint64 {
+	return wyhash.Sum64String(s)
+}
 
 func randomLevel() int {
 	level := 1

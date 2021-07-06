@@ -29,7 +29,7 @@ func newInt64Node(value int64, level int) *int64Node {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node

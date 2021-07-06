@@ -27,7 +27,7 @@ func newFloat32Node(value float32, level int) *float32Node {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node
@@ -316,7 +316,7 @@ func newFloat32NodeDesc(value float32, level int) *float32NodeDesc {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node
@@ -605,7 +605,7 @@ func newFloat64Node(value float64, level int) *float64Node {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node
@@ -894,7 +894,7 @@ func newFloat64NodeDesc(value float64, level int) *float64NodeDesc {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node
@@ -1183,7 +1183,7 @@ func newInt32Node(value int32, level int) *int32Node {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node
@@ -1472,7 +1472,7 @@ func newInt32NodeDesc(value int32, level int) *int32NodeDesc {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node
@@ -1761,7 +1761,7 @@ func newInt16Node(value int16, level int) *int16Node {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node
@@ -2050,7 +2050,7 @@ func newInt16NodeDesc(value int16, level int) *int16NodeDesc {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node
@@ -2339,7 +2339,7 @@ func newIntNode(value int, level int) *intNode {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node
@@ -2628,7 +2628,7 @@ func newIntNodeDesc(value int, level int) *intNodeDesc {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node
@@ -2917,7 +2917,7 @@ func newUuint64Node(value uint64, level int) *uint64Node {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node
@@ -3206,7 +3206,7 @@ func newUuint64NodeDescDesc(value uint64, level int) *uint64NodeDesc {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node
@@ -3495,7 +3495,7 @@ func newUint32Node(value uint32, level int) *uint32Node {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node
@@ -3784,7 +3784,7 @@ func newUint32NodeDesc(value uint32, level int) *uint32NodeDesc {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node
@@ -4073,7 +4073,7 @@ func newUint16Node(value uint16, level int) *uint16Node {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node
@@ -4362,7 +4362,7 @@ func newUint16NodeDesc(value uint16, level int) *uint16NodeDesc {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node
@@ -4651,7 +4651,7 @@ func newUintNode(value uint, level int) *uintNode {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node
@@ -4940,7 +4940,7 @@ func newUintNodeDesc(value uint, level int) *uintNodeDesc {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node
@@ -5231,7 +5231,7 @@ func newStringNode(value string, level int) *stringNode {
 		value: value,
 		level: uint32(level),
 	}
-	if level >= op1 {
+	if level > op1 {
 		node.next.extra = new([op2]unsafe.Pointer)
 	}
 	return node

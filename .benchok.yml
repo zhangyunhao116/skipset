@@ -1,0 +1,12 @@
+base:
+  file: "base.txt"
+  run: "go run types_gen.go && go test -run=NOTEST -bench=.+/.+/skipset -cpu=1,4,8,16 -benchtime=100000x -count=20 -timeout=60m > base.txt"
+  maxerr: 15
+
+cmp:
+  file: "latest.txt"
+  beforerun: "rm -f -- latest.txt"
+  run: "go run types_gen.go && go test -run=NOTEST -bench=.+/.+/skipset -cpu=1,4,8,16 -benchtime=100000x -count=20 -timeout=60m > latest.txt"
+  afterrun: "benchstat base.txt latest.txt"
+  ignore: "Contains50Hits"
+  maxerr: 20

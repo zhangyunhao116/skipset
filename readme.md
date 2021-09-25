@@ -45,7 +45,7 @@ import (
 )
 
 func main() {
-	l := NewInt()
+	l := skipset.NewInt()
 
 	for _, v := range []int{10, 12, 15} {
 		if l.Add(v) {

@@ -2,7 +2,8 @@ base:
   file: "base.txt"
   beforerun: "rm -f -- base.txt"
   run: "go run types_gen.go && go test -run=NOTEST -bench=.+/.+/skipset -cpu=1,4,8,16 -benchtime=100000x -count=20 -timeout=60m > base.txt"
-  maxerr: 15
+  maxerr: 5
+  maxrun: 5
 
 cmp:
   file: "latest.txt"
@@ -10,7 +11,8 @@ cmp:
   run: "go run types_gen.go && go test -run=NOTEST -bench=.+/.+/skipset -cpu=1,4,8,16 -benchtime=100000x -count=20 -timeout=60m > latest.txt"
   afterrun: "benchstat -alpha=0.001 base.txt latest.txt"
   ignore: "Contains50Hits"
-  maxerr: 15
+  maxerr: 5
+  maxrun: 5
 
 release:
   file: "release.txt"

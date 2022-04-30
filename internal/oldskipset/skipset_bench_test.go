@@ -1,4 +1,4 @@
-package skipset
+package oldskipset
 
 import (
 	"math"
@@ -17,7 +17,7 @@ const (
 func BenchmarkInt64(b *testing.B) {
 	all := []benchInt64Task{{
 		name: "skipset", New: func() int64Set {
-			return New[int64]()
+			return NewInt64()
 		}}}
 	all = append(all, benchInt64Task{
 		name: "sync.Map", New: func() int64Set {
@@ -33,7 +33,7 @@ func BenchmarkInt64(b *testing.B) {
 func BenchmarkString(b *testing.B) {
 	all := []benchStringTask{{
 		name: "skipset", New: func() stringSet {
-			return New[string]()
+			return NewString()
 		}}}
 	all = append(all, benchStringTask{
 		name: "sync.Map", New: func() stringSet {

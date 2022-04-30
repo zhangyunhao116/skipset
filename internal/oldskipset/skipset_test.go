@@ -1,4 +1,4 @@
-package skipset
+package oldskipset
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 )
 
 func Example() {
-	l := New[int]()
+	l := NewInt()
 
 	for _, v := range []int{10, 12, 15} {
 		if l.Add(v) {
@@ -34,31 +34,9 @@ func Example() {
 	fmt.Printf("skipset contains %d items\r\n", l.Len())
 }
 
-type foo struct {
-	a int
-	b int
-}
-
-func TestFunc(t *testing.T) {
-	x := NewFunc(func(a, b foo) bool {
-		return a.a+a.b < b.a+b.b
-	}, func(a, b foo) bool {
-		return a == b
-	})
-	x.Add(foo{2, 1})
-	x.Add(foo{1, 2})
-	x.Add(foo{1, 3})
-	x.Add(foo{3, 1})
-	x.Add(foo{1, 2})
-	x.Range(func(value foo) bool {
-		println(value.a, value.b)
-		return true
-	})
-}
-
 func TestIntSet(t *testing.T) {
 	// Correctness.
-	l := New[int]()
+	l := NewInt()
 	if l.length != 0 {
 		t.Fatal("invalid length")
 	}
@@ -212,8 +190,8 @@ func TestIntSet(t *testing.T) {
 
 	// Correctness 2.
 	var (
-		x     = New[int]()
-		y     = New[int]()
+		x     = NewInt()
+		y     = NewInt()
 		count = 10000
 	)
 
@@ -241,7 +219,7 @@ func TestIntSet(t *testing.T) {
 	}
 
 	// Concurrent Add and Remove in small zone.
-	x = New[int]()
+	x = NewInt()
 	var (
 		addcount    uint64 = 0
 		removecount uint64 = 0
@@ -282,7 +260,7 @@ func TestIntSet(t *testing.T) {
 	})
 
 	// Correctness 3.
-	s1 := New[uint64]()
+	s1 := NewUint64()
 	var s2 sync.Map
 	var counter uint64
 	for i := 0; i <= 10000; i++ {
@@ -318,7 +296,7 @@ func TestIntSet(t *testing.T) {
 }
 
 func TestIntSetDesc(t *testing.T) {
-	s := NewDesc[int]()
+	s := NewIntDesc()
 	nums := []int{-1, 0, 5, 12}
 	for _, v := range nums {
 		s.Add(v)
@@ -334,7 +312,7 @@ func TestIntSetDesc(t *testing.T) {
 }
 
 func TestStringSet(t *testing.T) {
-	x := New[string]()
+	x := NewString()
 	if !x.Add("111") || x.Len() != 1 {
 		t.Fatal("invalid")
 	}

@@ -1,12 +1,3 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
-// This program is run via "go generate" (via a directive in sort.go)
-// to generate implementation variants of the underlying sorting algorithm.
-// When passed the -generic flag it generates generic variants of sorting;
-// otherwise it generates the non-generic variants used by the sort package.
-
 //go:build ignore
 
 package main
@@ -22,6 +13,7 @@ import (
 	_ "embed"
 )
 
+// Inspired by sort/gen_sort_variants.go
 type Variant struct {
 	// Name is the variant name: should be unique among variants.
 	Name string
@@ -39,8 +31,7 @@ type Variant struct {
 
 	StructPrefix    string
 	StructPrefixLow string
-
-	StructSuffix string
+	StructSuffix    string
 
 	ExtraFileds string
 
@@ -100,7 +91,7 @@ func main() {
 		Imports:         "\"sync\"\n\"sync/atomic\"\n\"unsafe\"\n",
 		FuncSuffix:      "Func",
 		TypeParam:       "[T any]",
-		ExtraFileds:     "\nless func(a,b T)bool\nequal func(a,b T)bool\n",
+		ExtraFileds:     "\nless func(a,b T)bool\n",
 		StructPrefix:    "Func",
 		StructPrefixLow: "func",
 		StructSuffix:    "",
@@ -109,7 +100,7 @@ func main() {
 				return fmt.Sprintf("s.less(%s,%s)", i, j)
 			},
 			"Equal": func(i, j string) string {
-				return fmt.Sprintf("s.equal(%s,%s)", i, j)
+				return fmt.Sprintf("!s.less(%s,%s)", j, i)
 			},
 		},
 	}

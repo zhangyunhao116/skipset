@@ -29,9 +29,8 @@ func NewDesc[T ordered]() *OrderedSetDesc[T] {
 //
 // Note that the less function requires a strict weak ordering,
 // see https://en.wikipedia.org/wiki/Weak_ordering#Strict_weak_orderings,
-// or the sorting may fail to sort correctly. A common case is when sorting slices of
-// floating-point numbers containing NaN values.
-func NewFunc[T any](less, equal func(a, b T) bool) *FuncSet[T] {
+// or undefined behavior will happen.
+func NewFunc[T any](less func(a, b T) bool) *FuncSet[T] {
 	var t T
 	h := newFuncNode(t, maxLevel)
 	h.flags.SetTrue(fullyLinked)
@@ -39,6 +38,5 @@ func NewFunc[T any](less, equal func(a, b T) bool) *FuncSet[T] {
 		header:       h,
 		highestLevel: defaultHighestLevel,
 		less:         less,
-		equal:        equal,
 	}
 }

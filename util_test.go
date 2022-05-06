@@ -12,77 +12,43 @@ import (
 	"github.com/zhangyunhao116/fastrand"
 )
 
-func Example() {
-	l := New[int]()
-
-	for _, v := range []int{10, 12, 15} {
-		if l.Add(v) {
-			fmt.Println("skipset add", v)
-		}
-	}
-
-	if l.Contains(10) {
-		fmt.Println("skipset contains 10")
-	}
-
-	l.Range(func(value int) bool {
-		fmt.Println("skipset range found ", value)
-		return true
-	})
-
-	l.Remove(15)
-	fmt.Printf("skipset contains %d items\r\n", l.Len())
+type anyskipset[T any] interface {
+	Add(v T) bool
+	Remove(v T) bool
+	Contains(v T) bool
+	Range(f func(v T) bool)
+	Len() int
 }
 
-type foo struct {
-	a int
-	b int
-}
+// Test suites.
 
-func TestFunc(t *testing.T) {
-	x := NewFunc(func(a, b foo) bool {
-		return a.a+a.b < b.a+b.b
-	}, func(a, b foo) bool {
-		return a == b
-	})
-	x.Add(foo{2, 1})
-	x.Add(foo{1, 2})
-	x.Add(foo{1, 3})
-	x.Add(foo{3, 1})
-	x.Add(foo{1, 2})
-	x.Range(func(value foo) bool {
-		println(value.a, value.b)
-		return true
-	})
-}
-
-func TestIntSet(t *testing.T) {
+func testIntSet(t *testing.T, newset func() anyskipset[int]) {
 	// Correctness.
-	l := New[int]()
-	if l.length != 0 {
+	l := newset()
+	if l.Len() != 0 {
 		t.Fatal("invalid length")
 	}
 	if l.Contains(0) {
 		t.Fatal("invalid contains")
 	}
 
-	if !l.Add(0) || l.length != 1 {
+	if !l.Add(0) || l.Len() != 1 {
 		t.Fatal("invalid add")
 	}
 	if !l.Contains(0) {
 		t.Fatal("invalid contains")
 	}
-	if !l.Remove(0) || l.length != 0 {
+	if !l.Remove(0) || l.Len() != 0 {
 		t.Fatal("invalid remove")
 	}
 
-	if !l.Add(20) || l.length != 1 {
+	if !l.Add(20) || l.Len() != 1 {
 		t.Fatal("invalid add")
 	}
-	if !l.Add(22) || l.length != 2 {
+	if !l.Add(22) || l.Len() != 2 {
 		t.Fatal("invalid add")
 	}
-	if !l.Add(21) || l.length != 3 {
+	if !l.Add(21) || l.Len() != 3 {
 		t.Fatal("invalid add")
 	}
 
@@ -101,7 +67,7 @@ func TestIntSet(t *testing.T) {
 		return true
 	})
 
-	if !l.Remove(21) || l.length != 2 {
+	if !l.Remove(21) || l.Len() != 2 {
 		t.Fatal("invalid remove")
 	}
 
@@ -143,8 +109,8 @@ func TestIntSet(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	if l.length != int64(num) {
-		t.Fatalf("invalid length expected %d, got %d", num, l.length)
+	if l.Len() != int(num) {
+		t.Fatalf("invalid length expected %d, got %d", num, l.Len())
 	}
 
 	// Don't contains 0 after concurrent addion.
@@ -179,8 +145,8 @@ func TestIntSet(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	if l.length != 0 {
-		t.Fatalf("invalid length expected %d, got %d", 0, l.length)
+	if l.Len() != 0 {
+		t.Fatalf("invalid length expected %d, got %d", 0, l.Len())
 	}
 
 	// Test all methods.
@@ -212,8 +178,8 @@ func TestIntSet(t *testing.T) {
 
 	// Correctness 2.
 	var (
-		x     = New[int]()
-		y     = New[int]()
+		x     = newset()
+		y     = newset()
 		count = 10000
 	)
 
@@ -241,7 +207,7 @@ func TestIntSet(t *testing.T) {
 	}
 
 	// Concurrent Add and Remove in small zone.
-	x = New[int]()
+	x = newset()
 	var (
 		addcount    uint64 = 0
 		removecount uint64 = 0
@@ -282,7 +248,7 @@ func TestIntSet(t *testing.T) {
 	})
 
 	// Correctness 3.
-	s1 := New[uint64]()
+	s1 := newset()
 	var s2 sync.Map
 	var counter uint64
 	for i := 0; i <= 10000; i++ {
@@ -290,18 +256,18 @@ func TestIntSet(t *testing.T) {
 		go func() {
 			if fastrand.Uint32n(2) == 0 {
 				r := fastrand.Uint32()
-				s1.Add(uint64(r))
-				s2.Store(uint64(r), nil)
+				s1.Add(int(r))
+				s2.Store(int(r), nil)
 			} else {
 				r := atomic.AddUint64(&counter, 1)
-				s1.Add(uint64(r))
-				s2.Store(uint64(r), nil)
+				s1.Add(int(r))
+				s2.Store(int(r), nil)
 			}
 			wg.Done()
 		}()
 	}
 	wg.Wait()
-	s1.Range(func(value uint64) bool {
+	s1.Range(func(value int) bool {
 		_, ok := s2.Load(value)
 		if !ok {
 			t.Fatal(value)
@@ -309,7 +275,7 @@ func TestIntSet(t *testing.T) {
 		return true
 	})
 	s2.Range(func(key, value interface{}) bool {
-		k := key.(uint64)
+		k := key.(int)
 		if !s1.Contains(k) {
 			t.Fatal(value)
 		}
@@ -317,8 +283,8 @@ func TestIntSet(t *testing.T) {
 	})
 }
 
-func TestIntSetDesc(t *testing.T) {
-	s := NewDesc[int]()
+func testIntSetDesc(t *testing.T, newsetdesc func() anyskipset[int]) {
+	s := newsetdesc()
 	nums := []int{-1, 0, 5, 12}
 	for _, v := range nums {
 		s.Add(v)
@@ -333,8 +299,8 @@ func TestIntSetDesc(t *testing.T) {
 	})
 }
 
-func TestStringSet(t *testing.T) {
-	x := New[string]()
+func testStringSet(t *testing.T, newset func() anyskipset[string]) {
+	x := newset()
 	if !x.Add("111") || x.Len() != 1 {
 		t.Fatal("invalid")
 	}

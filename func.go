@@ -14,8 +14,7 @@ type FuncSet[T any] struct {
 	length       int64
 	highestLevel uint64 // highest level for now
 
-	less  func(a, b T) bool
-	equal func(a, b T) bool
+	less func(a, b T) bool
 }
 
 type funcnode[T any] struct {
@@ -68,7 +67,7 @@ func (s *FuncSet[T]) findNodeRemove(value T, preds *[maxLevel]*funcnode[T], succ
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != nil && s.equal(succ.value, value) {
+		if lFound == -1 && succ != nil && !s.less(value, succ.value) {
 			lFound = i
 		}
 	}
@@ -89,7 +88,7 @@ func (s *FuncSet[T]) findNodeAdd(value T, preds *[maxLevel]*funcnode[T], succs *
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != nil && s.equal(succ.value, value) {
+		if succ != nil && !s.less(value, succ.value) {
 			return i
 		}
 	}
@@ -191,7 +190,7 @@ func (s *FuncSet[T]) Contains(value T) bool {
 		}
 
 		// Check if the value already in the skip list.
-		if nex != nil && s.equal(nex.value, value) {
+		if nex != nil && !s.less(value, nex.value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}

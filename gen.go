@@ -117,9 +117,9 @@ func main() {
 	ts := []string{"String", "Float32", "Float64", "Int", "Int64", "Int32", "Uint64", "Uint32", "Uint"}
 	for _, t := range ts {
 		baseType := &Variant{
-			Package:         "alltype",
+			Package:         "skipset",
 			Name:            "{{TypeLow}}",
-			Path:            "internal/alltype/{{TypeLow}}.go",
+			Path:            "{{TypeLow}}.go",
 			Imports:         "\"sync\"\n\"sync/atomic\"\n\"unsafe\"\n",
 			Type:            "{{TypeLow}}",
 			TypeArgument:    "",
@@ -137,16 +137,16 @@ func main() {
 			},
 		}
 		baseTypeDesc := &Variant{
-			Package:         "alltype",
+			Package:         "skipset",
 			Name:            "{{TypeLow}}Desc",
-			Path:            "internal/alltype/{{TypeLow}}Desc.go",
+			Path:            "{{TypeLow}}Desc.go",
 			Imports:         "\"sync\"\n\"sync/atomic\"\n\"unsafe\"\n",
 			Type:            "{{TypeLow}}",
 			TypeArgument:    "",
 			TypeParam:       "",
-			StructPrefix:    "{{Type}}Desc",
+			StructPrefix:    "{{Type}}",
 			StructPrefixLow: "{{TypeLow}}",
-			StructSuffix:    "",
+			StructSuffix:    "Desc",
 			Funcs: template.FuncMap{
 				"Less": func(i, j string) string {
 					return fmt.Sprintf("(%s > %s)", i, j)

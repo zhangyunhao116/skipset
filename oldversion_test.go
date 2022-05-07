@@ -11,7 +11,7 @@ func TestOldVersion(t *testing.T) {
 	testIntSetDesc(t, func() anyskipset[int] {
 		return NewIntDesc()
 	})
-	testStringSet(t, func() anyskipset[string] {
-		return NewString()
-	})
+	// testStringSet(t, func() anyskipset[string] {
+	// 	return NewString()
+	// })
 }

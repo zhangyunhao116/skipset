@@ -25,6 +25,31 @@ func TestOrdered(t *testing.T) {
 }
 
 func TestFunc(t *testing.T) {
+	x := NewFunc(func(a, b float64) bool {
+		return a < b || (math.IsNaN(a) && !math.IsNaN(b))
+	})
+	x.Add(math.NaN())
+	x.Add(3)
+	x.Add(1)
+	x.Add(math.NaN())
+	x.Add(2)
+	x.Add(math.NaN())
+	if x.Len() != 4 {
+		t.Fatal(x.Len())
+	}
+	res := []float64{math.NaN(), 1, 2, 3}
+	var i int
+	x.Range(func(value float64) bool {
+		if i == 0 && !math.IsNaN(value) {
+			t.Fatal()
+		}
+		if i >= 1 && value != res[i] {
+			t.Fatal()
+		}
+		i++
+		return true
+	})
+
 	testIntSet(t, func() anyskipset[int] {
 		return NewFunc(func(a, b int) bool {
 			return a < b

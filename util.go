@@ -1,10 +1,7 @@
 package skipset
 
 import (
-	_ "unsafe" // for linkname
-
 	"github.com/zhangyunhao116/fastrand"
-	"github.com/zhangyunhao116/wyhash"
 )
 
 const (
@@ -12,13 +9,6 @@ const (
 	p                   = 0.25
 	defaultHighestLevel = 3
 )
-
-//go:linkname cmpstring runtime.cmpstring
-func cmpstring(a, b string) int
-
-func hash(s string) uint64 {
-	return wyhash.Sum64String(s)
-}
 
 func randomLevel() int {
 	level := 1
@@ -29,4 +19,13 @@ func randomLevel() int {
 		return maxLevel
 	}
 	return level
+}
+
+// ordered is a constraint that permits any ordered type: any type
+// that supports the operators < <= >= >.
+type ordered interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 | // sign
+		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr | // unsign
+		~float32 | ~float64 | // float
+		~string
 }

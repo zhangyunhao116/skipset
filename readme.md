@@ -4,6 +4,8 @@
 
 ## Introduction
 
+> From v0.12.0, the skipset requires Go version >= 1.18, if your Go version is lower, use v0.11.0 instead.
+
 skipset is a high-performance, scalable, concurrent-safe set based on skip-list. In the typical pattern(100000 operations, 90%CONTAINS 9%ADD 1%REMOVE, 8C16T), the skipset up to 15x faster than the built-in `sync.Map`.
 
 The main idea behind the skipset is [A Simple Optimistic Skiplist Algorithm](<https://people.csail.mit.edu/shanir/publications/LazySkipList.pdf>).
@@ -70,7 +72,49 @@ func main() {
 
 
 
+From `v0.12.0`, you can use generic version APIs.
+
+**Note that generic APIs are always slower than typed APIs, but are more suitable for some scenarios such as functional programming.**
+
+> e.g. `New[int]` is ~2x slower than `NewInt`, and `NewFunc(func(a, b int) bool { return a < b })` is 1~2x slower than `New[int]`.
+>
+> Performance ranking: NewInt > New[Int] > NewFunc(func(a, b int) bool { return a < b })
+
+```go
+package main
+
+import (
+	"math"
+
+	"github.com/zhangyunhao116/skipset"
+)
+
+func main() {
+	x1 := skipset.New[int]()
+	for _, v := range []int{2, 1, 3} {
+		x1.Add(v)
+	}
+	x1.Range(func(value int) bool {
+		println(value)
+		return true
+	})
+	x2 := skipset.NewFunc(func(a, b float64) bool {
+		return a < b || (math.IsNaN(a) && !math.IsNaN(b))
+	})
+	for _, v := range []float64{math.NaN(), 3, 1, math.NaN(), 2} {
+		x2.Add(v)
+	}
+	x2.Range(func(value float64) bool {
+		println(value)
+		return true
+	})
+}
+
+```
+
 ## Benchmark
+
+> based on typed APIs.
 
 Go version: go1.16.2 linux/amd64
 
@@ -81,11 +125,6 @@ OS: ubuntu 18.04
 MEMORY: 16G x 2 (3200MHz)
 
 ![benchmark](https://raw.githubusercontent.com/zhangyunhao116/public-data/master/skipset-benchmark.png)
-
-```shell
-$ go test -run=NOTEST -bench=. -benchtime=100000x -benchmem -count=20 -timeout=60m  > x.txt
-$ benchstat x.txt
-```
 
 ```
 name                                              time/op

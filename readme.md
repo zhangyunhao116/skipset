@@ -114,6 +114,8 @@ func main() {
 
 ## Benchmark
 
+> base on typed APIs.
+
 Go version: go1.16.2 linux/amd64
 
 CPU: AMD 3700x(8C16T), running at 3.6GHz
@@ -123,11 +125,6 @@ OS: ubuntu 18.04
 MEMORY: 16G x 2 (3200MHz)
 
 ![benchmark](https://raw.githubusercontent.com/zhangyunhao116/public-data/master/skipset-benchmark.png)
-
-```shell
-$ go test -run=NOTEST -bench=. -benchtime=100000x -benchmem -count=20 -timeout=60m  > x.txt
-$ benchstat x.txt
-```
 
 ```
 name                                              time/op

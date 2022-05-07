@@ -5,7 +5,7 @@
 //go:generate go run gen.go
 package skipset
 
-// New return an empty skip set in ascending order.
+// New returns an empty skip set in ascending order.
 func New[T ordered]() *OrderedSet[T] {
 	var t T
 	h := newOrderedNode(t, maxLevel)
@@ -16,7 +16,7 @@ func New[T ordered]() *OrderedSet[T] {
 	}
 }
 
-// NewDesc return an empty skip set in descending order.
+// NewDesc returns an empty skip set in descending order.
 func NewDesc[T ordered]() *OrderedSetDesc[T] {
 	var t T
 	h := newOrderedNodeDesc(t, maxLevel)
@@ -27,7 +27,7 @@ func NewDesc[T ordered]() *OrderedSetDesc[T] {
 	}
 }
 
-// NewFunc return an empty skip set in ascending order.
+// NewFunc returns an empty skip set in ascending order.
 //
 // Note that the less function requires a strict weak ordering,
 // see https://en.wikipedia.org/wiki/Weak_ordering#Strict_weak_orderings,

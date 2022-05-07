@@ -1,6 +1,8 @@
 // Package skipset is a high-performance, scalable, concurrent-safe set based on skip-list.
 // In the typical pattern(100000 operations, 90%CONTAINS 9%Add 1%Remove, 8C16T), the skipset
 // up to 15x faster than the built-in sync.Map.
+//
+//go:generate go run gen.go
 package skipset
 
 // New return an empty skip set in ascending order.

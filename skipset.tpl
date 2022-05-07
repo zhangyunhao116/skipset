@@ -102,8 +102,8 @@ func unlock{{.Name}}{{.TypeParam}}(preds [maxLevel]*{{.StructPrefixLow}}node{{.S
 	}
 }
 
-// Add add the value into skip set, return true if this process insert the value into skip set,
-// return false if this process can't insert this value, because another process has insert the same value.
+// Add adds the value into skip set, returns true if this process insert the value into skip set,
+// returns false if this process can't insert this value, because another process has insert the same value.
 //
 // If the value is in the skip set but not fully linked, this process will wait until it is.
 func (s *{{.StructPrefix}}Set{{.StructSuffix}}{{.TypeArgument}}) Add(value {{.Type}}) bool {
@@ -176,7 +176,7 @@ func (s *{{.StructPrefix}}Set{{.StructSuffix}}{{.TypeArgument}}) randomlevel() i
 	return level
 }
 
-// Contains check if the value is in the skip set.
+// Contains checks if the value is in the skip set.
 func (s *{{.StructPrefix}}Set{{.StructSuffix}}{{.TypeArgument}}) Contains(value {{.Type}}) bool {
 	x := s.header
 	for i := int(atomic.LoadUint64(&s.highestLevel)) - 1; i >= 0; i-- {
@@ -194,7 +194,7 @@ func (s *{{.StructPrefix}}Set{{.StructSuffix}}{{.TypeArgument}}) Contains(value 
 	return false
 }
 
-// Remove a node from the skip set.
+// Remove removes a node from the skip set.
 func (s *{{.StructPrefix}}Set{{.StructSuffix}}{{.TypeArgument}}) Remove(value {{.Type}}) bool {
 	var (
 		nodeToRemove *{{.StructPrefixLow}}node{{.StructSuffix}}{{.TypeArgument}}
@@ -273,7 +273,7 @@ func (s *{{.StructPrefix}}Set{{.StructSuffix}}{{.TypeArgument}}) Range(f func(va
 	}
 }
 
-// Len return the length of this skip set.
+// Len returns the length of this skip set.
 func (s *{{.StructPrefix}}Set{{.StructSuffix}}{{.TypeArgument}}) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }

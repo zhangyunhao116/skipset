@@ -12,6 +12,48 @@ import (
 	"github.com/zhangyunhao116/fastrand"
 )
 
+func TestOrdered(t *testing.T) {
+	testIntSet(t, func() anyskipset[int] {
+		return New[int]()
+	})
+	testIntSetDesc(t, func() anyskipset[int] {
+		return NewDesc[int]()
+	})
+	testStringSet(t, func() anyskipset[string] {
+		return New[string]()
+	})
+}
+
+func TestFunc(t *testing.T) {
+	testIntSet(t, func() anyskipset[int] {
+		return NewFunc(func(a, b int) bool {
+			return a < b
+		})
+	})
+	testIntSetDesc(t, func() anyskipset[int] {
+		return NewFunc(func(a, b int) bool {
+			return a > b
+		})
+	})
+	testStringSet(t, func() anyskipset[string] {
+		return NewFunc(func(a, b string) bool {
+			return a < b
+		})
+	})
+}
+
+func TestTypes(t *testing.T) {
+	testIntSet(t, func() anyskipset[int] {
+		return NewInt()
+	})
+	testIntSetDesc(t, func() anyskipset[int] {
+		return NewIntDesc()
+	})
+	testStringSet(t, func() anyskipset[string] {
+		return NewString()
+	})
+}
+
 type anyskipset[T any] interface {
 	Add(v T) bool
 	Remove(v T) bool

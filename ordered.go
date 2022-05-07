@@ -104,8 +104,8 @@ func unlockordered[T ordered](preds [maxLevel]*orderednode[T], highestLevel int)
 	}
 }
 
-// Add add the value into skip set, return true if this process insert the value into skip set,
-// return false if this process can't insert this value, because another process has insert the same value.
+// Add adds the value into skip set, returns true if this process insert the value into skip set,
+// returns false if this process can't insert this value, because another process has insert the same value.
 //
 // If the value is in the skip set but not fully linked, this process will wait until it is.
 func (s *OrderedSet[T]) Add(value T) bool {
@@ -178,7 +178,7 @@ func (s *OrderedSet[T]) randomlevel() int {
 	return level
 }
 
-// Contains check if the value is in the skip set.
+// Contains checks if the value is in the skip set.
 func (s *OrderedSet[T]) Contains(value T) bool {
 	x := s.header
 	for i := int(atomic.LoadUint64(&s.highestLevel)) - 1; i >= 0; i-- {
@@ -196,7 +196,7 @@ func (s *OrderedSet[T]) Contains(value T) bool {
 	return false
 }
 
-// Remove a node from the skip set.
+// Remove removes a node from the skip set.
 func (s *OrderedSet[T]) Remove(value T) bool {
 	var (
 		nodeToRemove *orderednode[T]
@@ -275,7 +275,7 @@ func (s *OrderedSet[T]) Range(f func(value T) bool) {
 	}
 }
 
-// Len return the length of this skip set.
+// Len returns the length of this skip set.
 func (s *OrderedSet[T]) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }

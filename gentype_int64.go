@@ -8,25 +8,24 @@ import (
 	"unsafe"
 )
 
-// FuncSet represents a set based on skip list.
-type FuncSet[T any] struct {
-	header       *funcnode[T]
+// Int64Set represents a set based on skip list.
+type Int64Set struct {
+	header       *int64node
 	length       int64
 	highestLevel uint64 // highest level for now
 
-	less func(a, b T) bool
 }
 
-type funcnode[T any] struct {
-	value T
-	next  optionalArray // [level]*funcnode
+type int64node struct {
+	value int64
+	next  optionalArray // [level]*int64node
 	mu    sync.Mutex
 	flags bitflag
 	level uint32
 }
 
-func newFuncNode[T any](value T, level int) *funcnode[T] {
-	n := &funcnode[T]{
+func newInt64Node(value int64, level int) *int64node {
+	n := &int64node{
 		value: value,
 		level: uint32(level),
 	}
@@ -36,30 +35,30 @@ func newFuncNode[T any](value T, level int) *funcnode[T] {
 	return n
 }
 
-func (n *funcnode[T]) loadNext(i int) *funcnode[T] {
-	return (*funcnode[T])(n.next.load(i))
+func (n *int64node) loadNext(i int) *int64node {
+	return (*int64node)(n.next.load(i))
 }
 
-func (n *funcnode[T]) storeNext(i int, next *funcnode[T]) {
+func (n *int64node) storeNext(i int, next *int64node) {
 	n.next.store(i, unsafe.Pointer(next))
 }
 
-func (n *funcnode[T]) atomicLoadNext(i int) *funcnode[T] {
-	return (*funcnode[T])(n.next.atomicLoad(i))
+func (n *int64node) atomicLoadNext(i int) *int64node {
+	return (*int64node)(n.next.atomicLoad(i))
 }
 
-func (n *funcnode[T]) atomicStoreNext(i int, next *funcnode[T]) {
+func (n *int64node) atomicStoreNext(i int, next *int64node) {
 	n.next.atomicStore(i, unsafe.Pointer(next))
 }
 
 // findNodeRemove takes a value and two maximal-height arrays then searches exactly as in a sequential skip-list.
 // The returned preds and succs always satisfy preds[i] > value >= succs[i].
-func (s *FuncSet[T]) findNodeRemove(value T, preds *[maxLevel]*funcnode[T], succs *[maxLevel]*funcnode[T]) int {
+func (s *Int64Set) findNodeRemove(value int64, preds *[maxLevel]*int64node, succs *[maxLevel]*int64node) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
 	for i := int(atomic.LoadUint64(&s.highestLevel)) - 1; i >= 0; i-- {
 		succ := x.atomicLoadNext(i)
-		for succ != nil && s.less(succ.value, value) {
+		for succ != nil && (succ.value < value) {
 			x = succ
 			succ = x.atomicLoadNext(i)
 		}
@@ -67,7 +66,7 @@ func (s *FuncSet[T]) findNodeRemove(value T, preds *[maxLevel]*funcnode[T], succ
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != nil && !s.less(value, succ.value) {
+		if lFound == -1 && succ != nil && succ.value == value {
 			lFound = i
 		}
 	}
@@ -76,11 +75,11 @@ func (s *FuncSet[T]) findNodeRemove(value T, preds *[maxLevel]*funcnode[T], succ
 
 // findNodeAdd takes a value and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > value >= succs[i].
-func (s *FuncSet[T]) findNodeAdd(value T, preds *[maxLevel]*funcnode[T], succs *[maxLevel]*funcnode[T]) int {
+func (s *Int64Set) findNodeAdd(value int64, preds *[maxLevel]*int64node, succs *[maxLevel]*int64node) int {
 	x := s.header
 	for i := int(atomic.LoadUint64(&s.highestLevel)) - 1; i >= 0; i-- {
 		succ := x.atomicLoadNext(i)
-		for succ != nil && s.less(succ.value, value) {
+		for succ != nil && (succ.value < value) {
 			x = succ
 			succ = x.atomicLoadNext(i)
 		}
@@ -88,15 +87,15 @@ func (s *FuncSet[T]) findNodeAdd(value T, preds *[maxLevel]*funcnode[T], succs *
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != nil && !s.less(value, succ.value) {
+		if succ != nil && succ.value == value {
 			return i
 		}
 	}
 	return -1
 }
 
-func unlockfunc[T any](preds [maxLevel]*funcnode[T], highestLevel int) {
-	var prevPred *funcnode[T]
+func unlockint64(preds [maxLevel]*int64node, highestLevel int) {
+	var prevPred *int64node
 	for i := highestLevel; i >= 0; i-- {
 		if preds[i] != prevPred { // the node could be unlocked by previous loop
 			preds[i].mu.Unlock()
@@ -109,9 +108,9 @@ func unlockfunc[T any](preds [maxLevel]*funcnode[T], highestLevel int) {
 // returns false if this process can't insert this value, because another process has insert the same value.
 //
 // If the value is in the skip set but not fully linked, this process will wait until it is.
-func (s *FuncSet[T]) Add(value T) bool {
+func (s *Int64Set) Add(value int64) bool {
 	level := s.randomlevel()
-	var preds, succs [maxLevel]*funcnode[T]
+	var preds, succs [maxLevel]*int64node
 	for {
 		lFound := s.findNodeAdd(value, &preds, &succs)
 		if lFound != -1 { // indicating the value is already in the skip-list
@@ -130,7 +129,7 @@ func (s *FuncSet[T]) Add(value T) bool {
 		var (
 			highestLocked        = -1 // the highest level being locked by this process
 			valid                = true
-			pred, succ, prevPred *funcnode[T]
+			pred, succ, prevPred *int64node
 		)
 		for layer := 0; valid && layer < level; layer++ {
 			pred = preds[layer]   // target node's previous node
@@ -147,23 +146,23 @@ func (s *FuncSet[T]) Add(value T) bool {
 			valid = !pred.flags.Get(marked) && (succ == nil || !succ.flags.Get(marked)) && pred.loadNext(layer) == succ
 		}
 		if !valid {
-			unlockfunc(preds, highestLocked)
+			unlockint64(preds, highestLocked)
 			continue
 		}
 
-		nn := newFuncNode(value, level)
+		nn := newInt64Node(value, level)
 		for layer := 0; layer < level; layer++ {
 			nn.storeNext(layer, succs[layer])
 			preds[layer].atomicStoreNext(layer, nn)
 		}
 		nn.flags.SetTrue(fullyLinked)
-		unlockfunc(preds, highestLocked)
+		unlockint64(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
 	}
 }
 
-func (s *FuncSet[T]) randomlevel() int {
+func (s *Int64Set) randomlevel() int {
 	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
@@ -180,17 +179,17 @@ func (s *FuncSet[T]) randomlevel() int {
 }
 
 // Contains checks if the value is in the skip set.
-func (s *FuncSet[T]) Contains(value T) bool {
+func (s *Int64Set) Contains(value int64) bool {
 	x := s.header
 	for i := int(atomic.LoadUint64(&s.highestLevel)) - 1; i >= 0; i-- {
 		nex := x.atomicLoadNext(i)
-		for nex != nil && s.less(nex.value, value) {
+		for nex != nil && (nex.value < value) {
 			x = nex
 			nex = x.atomicLoadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != nil && !s.less(value, nex.value) {
+		if nex != nil && nex.value == value {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -198,12 +197,12 @@ func (s *FuncSet[T]) Contains(value T) bool {
 }
 
 // Remove removes a node from the skip set.
-func (s *FuncSet[T]) Remove(value T) bool {
+func (s *Int64Set) Remove(value int64) bool {
 	var (
-		nodeToRemove *funcnode[T]
+		nodeToRemove *int64node
 		isMarked     bool // represents if this operation mark the node
 		topLayer     = -1
-		preds, succs [maxLevel]*funcnode[T]
+		preds, succs [maxLevel]*int64node
 	)
 	for {
 		lFound := s.findNodeRemove(value, &preds, &succs)
@@ -226,7 +225,7 @@ func (s *FuncSet[T]) Remove(value T) bool {
 			var (
 				highestLocked        = -1 // the highest level being locked by this process
 				valid                = true
-				pred, succ, prevPred *funcnode[T]
+				pred, succ, prevPred *int64node
 			)
 			for layer := 0; valid && (layer <= topLayer); layer++ {
 				pred, succ = preds[layer], succs[layer]
@@ -243,7 +242,7 @@ func (s *FuncSet[T]) Remove(value T) bool {
 				valid = !pred.flags.Get(marked) && pred.loadNext(layer) == succ
 			}
 			if !valid {
-				unlockfunc(preds, highestLocked)
+				unlockint64(preds, highestLocked)
 				continue
 			}
 			for i := topLayer; i >= 0; i-- {
@@ -252,7 +251,7 @@ func (s *FuncSet[T]) Remove(value T) bool {
 				preds[i].atomicStoreNext(i, nodeToRemove.loadNext(i))
 			}
 			nodeToRemove.mu.Unlock()
-			unlockfunc(preds, highestLocked)
+			unlockint64(preds, highestLocked)
 			atomic.AddInt64(&s.length, -1)
 			return true
 		}
@@ -262,7 +261,7 @@ func (s *FuncSet[T]) Remove(value T) bool {
 
 // Range calls f sequentially for each value present in the skip set.
 // If f returns false, range stops the iteration.
-func (s *FuncSet[T]) Range(f func(value T) bool) {
+func (s *Int64Set) Range(f func(value int64) bool) {
 	x := s.header.atomicLoadNext(0)
 	for x != nil {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
@@ -277,6 +276,6 @@ func (s *FuncSet[T]) Range(f func(value T) bool) {
 }
 
 // Len returns the length of this skip set.
-func (s *FuncSet[T]) Len() int {
+func (s *Int64Set) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }

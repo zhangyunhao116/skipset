@@ -76,7 +76,7 @@ From `v0.12.0`, you can use generic version APIs.
 
 **Note that generic APIs are always slower than typed APIs, but are more suitable for some scenarios such as functional programming.**
 
-> e.g. `New[int]` is ~2x slower than `NewInt`, and `NewFunc(func(a, b int) bool { return a < b })` is 1~2x slower than `New[int]`.
+> e.g. `New[int]` is \~2x slower than `NewInt`, and `NewFunc(func(a, b int) bool { return a < b })` is 1\~2x slower than `New[int]`.
 >
 > Performance ranking: NewInt > New[Int] > NewFunc(func(a, b int) bool { return a < b })
 

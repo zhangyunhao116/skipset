@@ -2,7 +2,6 @@ package skipset
 
 import (
 	"math"
-	"strconv"
 	"sync"
 	"testing"
 
@@ -15,72 +14,42 @@ const (
 )
 
 func BenchmarkInt64(b *testing.B) {
-	all := []benchInt64Task{{
-		name: "skipset", New: func() int64Set {
+	all := []benchTask[int64]{{
+		name: "skipset", New: func() anyskipset[int64] {
 			return New[int64]()
 		}}}
-	all = append(all, benchInt64Task{
-		name: "sync.Map", New: func() int64Set {
-			return new(int64SyncMap)
+	all = append(all, benchTask[int64]{
+		name: "skipset(func)", New: func() anyskipset[int64] {
+			return NewFunc(func(a, b int64) bool {
+				return a < b
+			})
 		}})
-	benchAdd(b, all)
-	benchContains50Hits(b, all)
-	bench30Add70Contains(b, all)
-	bench1Remove9Add90Contains(b, all)
-	bench1Range9Remove90Add900Contains(b, all)
+	all = append(all, benchTask[int64]{
+		name: "sync.Map", New: func() anyskipset[int64] {
+			return new(anySyncMap[int64])
+		}})
+	rng := fastrand.Int63
+	benchAdd(b, rng, all)
+	bench30Add70Contains(b, rng, all)
+	bench1Remove9Add90Contains(b, rng, all)
+	bench1Range9Remove90Add900Contains(b, rng, all)
 }
 
-func BenchmarkString(b *testing.B) {
-	all := []benchStringTask{{
-		name: "skipset", New: func() stringSet {
-			return New[string]()
-		}}}
-	all = append(all, benchStringTask{
-		name: "sync.Map", New: func() stringSet {
-			return new(stringSyncMap)
-		}})
-	benchStringAdd(b, all)
-	benchStringContains50Hits(b, all)
-	benchString30Add70Contains(b, all)
-	benchString1Remove9Add90Contains(b, all)
-	benchString1Range9Remove90Add900Contains(b, all)
-}
-
-func benchAdd(b *testing.B, benchTasks []benchInt64Task) {
+func benchAdd[T any](b *testing.B, rng func() T, benchTasks []benchTask[T]) {
 	for _, v := range benchTasks {
 		b.Run("Add/"+v.name, func(b *testing.B) {
 			s := v.New()
 			b.ResetTimer()
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					s.Add(int64(fastrand.Uint32n(randN)))
+					s.Add(rng())
 				}
 			})
 		})
 	}
 }
 
-func benchContains50Hits(b *testing.B, benchTasks []benchInt64Task) {
-	for _, v := range benchTasks {
-		b.Run("Contains50Hits/"+v.name, func(b *testing.B) {
-			const rate = 2
-			s := v.New()
-			for i := 0; i < initsize*rate; i++ {
-				if fastrand.Uint32n(rate) == 0 {
-					s.Add(int64(i))
-				}
-			}
-			b.ResetTimer()
-			b.RunParallel(func(pb *testing.PB) {
-				for pb.Next() {
-					_ = s.Contains(int64(fastrand.Uint32n(initsize * rate)))
-				}
-			})
-		})
-	}
-}
-
-func bench30Add70Contains(b *testing.B, benchTasks []benchInt64Task) {
+func bench30Add70Contains[T any](b *testing.B, rng func() T, benchTasks []benchTask[T]) {
 	for _, v := range benchTasks {
 		b.Run("30Add70Contains/"+v.name, func(b *testing.B) {
 			s := v.New()
@@ -89,9 +58,9 @@ func bench30Add70Contains(b *testing.B, benchTasks []benchInt64Task) {
 				for pb.Next() {
 					u := fastrand.Uint32n(10)
 					if u < 3 {
-						s.Add(int64(fastrand.Uint32n(randN)))
+						s.Add(rng())
 					} else {
-						s.Contains(int64(fastrand.Uint32n(randN)))
+						s.Contains(rng())
 					}
 				}
 			})
@@ -99,7 +68,7 @@ func bench30Add70Contains(b *testing.B, benchTasks []benchInt64Task) {
 	}
 }
 
-func bench1Remove9Add90Contains(b *testing.B, benchTasks []benchInt64Task) {
+func bench1Remove9Add90Contains[T any](b *testing.B, rng func() T, benchTasks []benchTask[T]) {
 	for _, v := range benchTasks {
 		b.Run("1Remove9Add90Contains/"+v.name, func(b *testing.B) {
 			s := v.New()
@@ -108,11 +77,11 @@ func bench1Remove9Add90Contains(b *testing.B, benchTasks []benchInt64Task) {
 				for pb.Next() {
 					u := fastrand.Uint32n(100)
 					if u < 9 {
-						s.Add(int64(fastrand.Uint32n(randN)))
+						s.Add(rng())
 					} else if u == 10 {
-						s.Remove(int64(fastrand.Uint32n(randN)))
+						s.Remove(rng())
 					} else {
-						s.Contains(int64(fastrand.Uint32n(randN)))
+						s.Contains(rng())
 					}
 				}
 			})
@@ -120,7 +89,7 @@ func bench1Remove9Add90Contains(b *testing.B, benchTasks []benchInt64Task) {
 	}
 }
 
-func bench1Range9Remove90Add900Contains(b *testing.B, benchTasks []benchInt64Task) {
+func bench1Range9Remove90Add900Contains[T any](b *testing.B, rng func() T, benchTasks []benchTask[T]) {
 	for _, v := range benchTasks {
 		b.Run("1Range9Remove90Add900Contains/"+v.name, func(b *testing.B) {
 			s := v.New()
@@ -129,15 +98,15 @@ func bench1Range9Remove90Add900Contains(b *testing.B, benchTasks []benchInt64Tas
 				for pb.Next() {
 					u := fastrand.Uint32n(1000)
 					if u == 0 {
-						s.Range(func(score int64) bool {
+						s.Range(func(score T) bool {
 							return true
 						})
 					} else if u > 10 && u < 20 {
-						s.Remove(int64(fastrand.Uint32n(randN)))
+						s.Remove(rng())
 					} else if u >= 100 && u < 190 {
-						s.Add(int64(fastrand.Uint32n(randN)))
+						s.Add(rng())
 					} else {
-						s.Contains(int64(fastrand.Uint32n(randN)))
+						s.Contains(rng())
 					}
 				}
 			})
@@ -145,211 +114,41 @@ func bench1Range9Remove90Add900Contains(b *testing.B, benchTasks []benchInt64Tas
 	}
 }
 
-func benchStringAdd(b *testing.B, benchTasks []benchStringTask) {
-	for _, v := range benchTasks {
-		b.Run("Add/"+v.name, func(b *testing.B) {
-			s := v.New()
-			b.ResetTimer()
-			b.RunParallel(func(pb *testing.PB) {
-				for pb.Next() {
-					s.Add(strconv.Itoa(int(fastrand.Uint32n(randN))))
-				}
-			})
-		})
-	}
-}
-
-func benchStringContains50Hits(b *testing.B, benchTasks []benchStringTask) {
-	for _, v := range benchTasks {
-		b.Run("Contains50Hits/"+v.name, func(b *testing.B) {
-			const rate = 2
-			s := v.New()
-			for i := 0; i < initsize*rate; i++ {
-				if fastrand.Uint32n(rate) == 0 {
-					s.Add(strconv.Itoa(int(fastrand.Uint32n(randN))))
-				}
-			}
-			b.ResetTimer()
-			b.RunParallel(func(pb *testing.PB) {
-				for pb.Next() {
-					_ = s.Contains(strconv.Itoa(int(fastrand.Uint32n(randN))))
-				}
-			})
-		})
-	}
-}
-
-func benchString30Add70Contains(b *testing.B, benchTasks []benchStringTask) {
-	for _, v := range benchTasks {
-		b.Run("30Add70Contains/"+v.name, func(b *testing.B) {
-			s := v.New()
-			b.ResetTimer()
-			b.RunParallel(func(pb *testing.PB) {
-				for pb.Next() {
-					u := fastrand.Uint32n(10)
-					if u < 3 {
-						s.Add(strconv.Itoa(int(fastrand.Uint32n(randN))))
-					} else {
-						s.Contains(strconv.Itoa(int(fastrand.Uint32n(randN))))
-					}
-				}
-			})
-		})
-	}
-}
-
-func benchString1Remove9Add90Contains(b *testing.B, benchTasks []benchStringTask) {
-	for _, v := range benchTasks {
-		b.Run("1Remove9Add90Contains/"+v.name, func(b *testing.B) {
-			s := v.New()
-			b.ResetTimer()
-			b.RunParallel(func(pb *testing.PB) {
-				for pb.Next() {
-					u := fastrand.Uint32n(100)
-					if u < 9 {
-						s.Add(strconv.Itoa(int(fastrand.Uint32n(randN))))
-					} else if u == 10 {
-						s.Remove(strconv.Itoa(int(fastrand.Uint32n(randN))))
-					} else {
-						s.Contains(strconv.Itoa(int(fastrand.Uint32n(randN))))
-					}
-				}
-			})
-		})
-	}
-}
-
-func benchString1Range9Remove90Add900Contains(b *testing.B, benchTasks []benchStringTask) {
-	for _, v := range benchTasks {
-		b.Run("1Range9Remove90Add900Contains/"+v.name, func(b *testing.B) {
-			s := v.New()
-			b.ResetTimer()
-			b.RunParallel(func(pb *testing.PB) {
-				for pb.Next() {
-					u := fastrand.Uint32n(1000)
-					if u == 0 {
-						s.Range(func(score string) bool {
-							return true
-						})
-					} else if u > 10 && u < 20 {
-						s.Remove(strconv.Itoa(int(fastrand.Uint32n(randN))))
-					} else if u >= 100 && u < 190 {
-						s.Add(strconv.Itoa(int(fastrand.Uint32n(randN))))
-					} else {
-						s.Contains(strconv.Itoa(int(fastrand.Uint32n(randN))))
-					}
-				}
-			})
-		})
-	}
-}
-
-type benchInt64Task struct {
+type benchTask[T any] struct {
 	name string
-	New  func() int64Set
+	New  func() anyskipset[T]
 }
 
-type int64Set interface {
-	Add(x int64) bool
-	Contains(x int64) bool
-	Remove(x int64) bool
-	Range(f func(value int64) bool)
-}
-
-type int64SyncMap struct {
+type anySyncMap[T any] struct {
 	data sync.Map
 }
 
-func (m *int64SyncMap) Add(x int64) bool {
+func (m *anySyncMap[T]) Add(x T) bool {
 	m.data.Store(x, struct{}{})
 	return true
 }
 
-func (m *int64SyncMap) Contains(x int64) bool {
+func (m *anySyncMap[T]) Contains(x T) bool {
 	_, ok := m.data.Load(x)
 	return ok
 }
 
-func (m *int64SyncMap) Remove(x int64) bool {
+func (m *anySyncMap[T]) Remove(x T) bool {
 	m.data.Delete(x)
 	return true
 }
 
-func (m *int64SyncMap) Range(f func(value int64) bool) {
-	m.data.Range(func(key, _ interface{}) bool {
-		return !f(key.(int64))
+func (m *anySyncMap[T]) Range(f func(value T) bool) {
+	m.data.Range(func(key, _ any) bool {
+		return !f(key.(T))
 	})
 }
 
-type benchStringTask struct {
-	name string
-	New  func() stringSet
-}
-
-type stringSet interface {
-	Add(x string) bool
-	Contains(x string) bool
-	Remove(x string) bool
-	Range(f func(value string) bool)
-}
-
-type stringSyncMap struct {
-	data sync.Map
-}
-
-func (m *stringSyncMap) Add(x string) bool {
-	m.data.Store(x, struct{}{})
-	return true
-}
-
-func (m *stringSyncMap) Contains(x string) bool {
-	_, ok := m.data.Load(x)
-	return ok
-}
-
-func (m *stringSyncMap) Remove(x string) bool {
-	m.data.Delete(x)
-	return true
-}
-
-func (m *stringSyncMap) Range(f func(value string) bool) {
-	m.data.Range(func(key, _ interface{}) bool {
-		return !f(key.(string))
+func (m *anySyncMap[T]) Len() int {
+	var i int
+	m.data.Range(func(_, _ any) bool {
+		i++
+		return true
 	})
-}
-
-type int64RWMap struct {
-	data map[int64]struct{}
-	mu   sync.RWMutex
-}
-
-func (m *int64RWMap) Add(x int64) bool {
-	m.mu.Lock()
-	m.data[x] = struct{}{}
-	m.mu.Unlock()
-	return true
-}
-
-func (m *int64RWMap) Contains(x int64) bool {
-	m.mu.RLock()
-	_, ok := m.data[x]
-	m.mu.RUnlock()
-	return ok
-}
-
-func (m *int64RWMap) Remove(x int64) bool {
-	m.mu.Lock()
-	delete(m.data, x)
-	m.mu.Unlock()
-	return true
-}
-
-func (m *int64RWMap) Range(f func(value int64) bool) {
-	m.mu.RLock()
-	for k := range m.data {
-		if !f(k) {
-			break
-		}
-	}
-	m.mu.RUnlock()
+	return i
 }

@@ -8,6 +8,7 @@ import (
 	"go/format"
 	"log"
 	"os"
+	"strings"
 	"text/template"
 
 	_ "embed"
@@ -15,6 +16,9 @@ import (
 
 // Inspired by sort/gen_sort_variants.go
 type Variant struct {
+	// Package is the package name.
+	Package string
+
 	// Name is the variant name: should be unique among variants.
 	Name string
 
@@ -25,38 +29,39 @@ type Variant struct {
 	// Imports is the imports needed for this package.
 	Imports string
 
-	// FuncSuffix is appended to all function names in this variant's code. All
-	// suffixes should be unique within a package.
-	FuncSuffix string
-
 	StructPrefix    string
 	StructPrefixLow string
 	StructSuffix    string
+	ExtraFileds     string
 
-	ExtraFileds string
+	// Basic type. T or "".
+	Type string
+
+	// Basic type argument. [T] or "".
+	TypeArgument string
 
 	// TypeParam is the optional type parameter for the function.
-	TypeParam string
+	TypeParam string // e.g. [T any]
 
 	// Funcs is a map of functions used from within the template. The following
 	// functions are expected to exist:
-	//
-	//    Less (name, i, j):
-	//      emits a comparison expression that checks if the value `name` at
-	//      index `i` is smaller than at index `j`.
-	//
-	//    Swap (name, i, j):
-	//      emits a statement that performs a data swap between elements `i` and
-	//      `j` of the value `name`.
 	Funcs template.FuncMap
 }
 
+type TypeReplacement struct {
+	Type string
+	Desc string
+}
+
 func main() {
+	// For New.
 	base := &Variant{
+		Package:         "skipset",
 		Name:            "ordered",
 		Path:            "ordered.go",
 		Imports:         "\"sync\"\n\"sync/atomic\"\n\"unsafe\"\n",
-		FuncSuffix:      "",
+		Type:            "T",
+		TypeArgument:    "[T]",
 		TypeParam:       "[T ordered]",
 		StructPrefix:    "Ordered",
 		StructPrefixLow: "ordered",
@@ -72,7 +77,6 @@ func main() {
 	}
 	generate(base)
 	base.Name += "Desc"
-	base.FuncSuffix += "Desc"
 	base.StructSuffix += "Desc"
 	base.Path = "ordereddesc.go"
 	base.Funcs = template.FuncMap{
@@ -85,11 +89,14 @@ func main() {
 	}
 	generate(base)
 
+	// For NewFunc.
 	basefunc := &Variant{
+		Package:         "skipset",
 		Name:            "func",
 		Path:            "func.go",
 		Imports:         "\"sync\"\n\"sync/atomic\"\n\"unsafe\"\n",
-		FuncSuffix:      "Func",
+		Type:            "T",
+		TypeArgument:    "[T]",
 		TypeParam:       "[T any]",
 		ExtraFileds:     "\nless func(a,b T)bool\n",
 		StructPrefix:    "Func",
@@ -105,6 +112,66 @@ func main() {
 		},
 	}
 	generate(basefunc)
+
+	// For New{{Type}}.
+	ts := []string{"String", "Float32", "Float64", "Int", "Int64", "Int32", "Uint64", "Uint32", "Uint"}
+	for _, t := range ts {
+		baseType := &Variant{
+			Package:         "alltype",
+			Name:            "{{TypeLow}}",
+			Path:            "internal/alltype/{{TypeLow}}.go",
+			Imports:         "\"sync\"\n\"sync/atomic\"\n\"unsafe\"\n",
+			Type:            "{{TypeLow}}",
+			TypeArgument:    "",
+			TypeParam:       "",
+			StructPrefix:    "{{Type}}",
+			StructPrefixLow: "{{TypeLow}}",
+			StructSuffix:    "",
+			Funcs: template.FuncMap{
+				"Less": func(i, j string) string {
+					return fmt.Sprintf("(%s < %s)", i, j)
+				},
+				"Equal": func(i, j string) string {
+					return fmt.Sprintf("%s == %s", i, j)
+				},
+			},
+		}
+		baseTypeDesc := &Variant{
+			Package:         "alltype",
+			Name:            "{{TypeLow}}Desc",
+			Path:            "internal/alltype/{{TypeLow}}Desc.go",
+			Imports:         "\"sync\"\n\"sync/atomic\"\n\"unsafe\"\n",
+			Type:            "{{TypeLow}}",
+			TypeArgument:    "",
+			TypeParam:       "",
+			StructPrefix:    "{{Type}}Desc",
+			StructPrefixLow: "{{TypeLow}}",
+			StructSuffix:    "",
+			Funcs: template.FuncMap{
+				"Less": func(i, j string) string {
+					return fmt.Sprintf("(%s > %s)", i, j)
+				},
+				"Equal": func(i, j string) string {
+					return fmt.Sprintf("%s == %s", i, j)
+				},
+			},
+		}
+		tl := strings.ToLower(t)
+		baseType.StructPrefix = strings.Replace(baseType.StructPrefix, "{{Type}}", t, -1)
+		baseType.Name = strings.Replace(baseType.Name, "{{TypeLow}}", tl, -1)
+		baseType.Path = strings.Replace(baseType.Path, "{{TypeLow}}", tl, -1)
+		baseType.Type = strings.Replace(baseType.Type, "{{TypeLow}}", tl, -1)
+		baseType.StructPrefixLow = strings.Replace(baseType.StructPrefixLow, "{{TypeLow}}", tl, -1)
+
+		baseTypeDesc.StructPrefix = strings.Replace(baseTypeDesc.StructPrefix, "{{Type}}", t, -1)
+		baseTypeDesc.Name = strings.Replace(baseTypeDesc.Name, "{{TypeLow}}", tl, -1)
+		baseTypeDesc.Path = strings.Replace(baseTypeDesc.Path, "{{TypeLow}}", tl, -1)
+		baseTypeDesc.Type = strings.Replace(baseTypeDesc.Type, "{{TypeLow}}", tl, -1)
+		baseTypeDesc.StructPrefixLow = strings.Replace(baseTypeDesc.StructPrefixLow, "{{TypeLow}}", tl, -1)
+
+		generate(baseType)
+		generate(baseTypeDesc)
+	}
 }
 
 // generate generates the code for variant `v` into a file named by `v.Path`.
@@ -121,6 +188,8 @@ func generate(v *Variant) {
 	if err != nil {
 		log.Fatal("template Execute:", err)
 	}
+
+	os.WriteFile(v.Path, out.Bytes(), 0644)
 
 	formatted, err := format.Source(out.Bytes())
 	if err != nil {

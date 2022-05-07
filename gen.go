@@ -139,7 +139,7 @@ func main() {
 		baseTypeDesc := &Variant{
 			Package:         "skipset",
 			Name:            "{{TypeLow}}Desc",
-			Path:            "gen_{{TypeLow}}Desc.go",
+			Path:            "gen_{{TypeLow}}desc.go",
 			Imports:         "\"sync\"\n\"sync/atomic\"\n\"unsafe\"\n",
 			Type:            "{{TypeLow}}",
 			TypeArgument:    "",

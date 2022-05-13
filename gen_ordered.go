@@ -10,17 +10,16 @@ import (
 
 // OrderedSet represents a set based on skip list.
 type OrderedSet[T ordered] struct {
-	header       *orderednode[T]
 	length       int64
 	highestLevel uint64 // highest level for now
-
+	header       *orderednode[T]
 }
 
 type orderednode[T ordered] struct {
+	flags bitflag
 	value T
 	next  optionalArray // [level]*orderednode
 	mu    sync.Mutex
-	flags bitflag
 	level uint32
 }
 

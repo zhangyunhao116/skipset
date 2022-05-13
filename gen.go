@@ -58,7 +58,7 @@ func main() {
 	base := &Variant{
 		Package:         "skipset",
 		Name:            "ordered",
-		Path:            "ordered.go",
+		Path:            "gen_ordered.go",
 		Imports:         "\"sync\"\n\"sync/atomic\"\n\"unsafe\"\n",
 		Type:            "T",
 		TypeArgument:    "[T]",
@@ -78,7 +78,7 @@ func main() {
 	generate(base)
 	base.Name += "Desc"
 	base.StructSuffix += "Desc"
-	base.Path = "ordereddesc.go"
+	base.Path = "gen_ordereddesc.go"
 	base.Funcs = template.FuncMap{
 		"Less": func(i, j string) string {
 			return fmt.Sprintf("(%s > %s)", i, j)
@@ -93,7 +93,7 @@ func main() {
 	basefunc := &Variant{
 		Package:         "skipset",
 		Name:            "func",
-		Path:            "func.go",
+		Path:            "gen_func.go",
 		Imports:         "\"sync\"\n\"sync/atomic\"\n\"unsafe\"\n",
 		Type:            "T",
 		TypeArgument:    "[T]",

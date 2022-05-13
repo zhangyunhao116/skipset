@@ -10,17 +10,16 @@ import (
 
 // Uint64SetDesc represents a set based on skip list.
 type Uint64SetDesc struct {
-	header       *uint64nodeDesc
 	length       int64
 	highestLevel uint64 // highest level for now
-
+	header       *uint64nodeDesc
 }
 
 type uint64nodeDesc struct {
+	flags bitflag
 	value uint64
 	next  optionalArray // [level]*uint64nodeDesc
 	mu    sync.Mutex
-	flags bitflag
 	level uint32
 }
 

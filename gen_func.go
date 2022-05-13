@@ -8,24 +8,25 @@ import (
 	"unsafe"
 )
 
-// OrderedSetDesc represents a set based on skip list.
-type OrderedSetDesc[T ordered] struct {
-	header       *orderednodeDesc[T]
+// FuncSet represents a set based on skip list.
+type FuncSet[T any] struct {
 	length       int64
 	highestLevel uint64 // highest level for now
+	header       *funcnode[T]
 
+	less func(a, b T) bool
 }
 
-type orderednodeDesc[T ordered] struct {
-	value T
-	next  optionalArray // [level]*orderednodeDesc
-	mu    sync.Mutex
+type funcnode[T any] struct {
 	flags bitflag
+	value T
+	next  optionalArray // [level]*funcnode
+	mu    sync.Mutex
 	level uint32
 }
 
-func newOrderedNodeDesc[T ordered](value T, level int) *orderednodeDesc[T] {
-	n := &orderednodeDesc[T]{
+func newFuncNode[T any](value T, level int) *funcnode[T] {
+	n := &funcnode[T]{
 		value: value,
 		level: uint32(level),
 	}
@@ -35,30 +36,30 @@ func newOrderedNodeDesc[T ordered](value T, level int) *orderednodeDesc[T] {
 	return n
 }
 
-func (n *orderednodeDesc[T]) loadNext(i int) *orderednodeDesc[T] {
-	return (*orderednodeDesc[T])(n.next.load(i))
+func (n *funcnode[T]) loadNext(i int) *funcnode[T] {
+	return (*funcnode[T])(n.next.load(i))
 }
 
-func (n *orderednodeDesc[T]) storeNext(i int, next *orderednodeDesc[T]) {
+func (n *funcnode[T]) storeNext(i int, next *funcnode[T]) {
 	n.next.store(i, unsafe.Pointer(next))
 }
 
-func (n *orderednodeDesc[T]) atomicLoadNext(i int) *orderednodeDesc[T] {
-	return (*orderednodeDesc[T])(n.next.atomicLoad(i))
+func (n *funcnode[T]) atomicLoadNext(i int) *funcnode[T] {
+	return (*funcnode[T])(n.next.atomicLoad(i))
 }
 
-func (n *orderednodeDesc[T]) atomicStoreNext(i int, next *orderednodeDesc[T]) {
+func (n *funcnode[T]) atomicStoreNext(i int, next *funcnode[T]) {
 	n.next.atomicStore(i, unsafe.Pointer(next))
 }
 
 // findNodeRemove takes a value and two maximal-height arrays then searches exactly as in a sequential skip-list.
 // The returned preds and succs always satisfy preds[i] > value >= succs[i].
-func (s *OrderedSetDesc[T]) findNodeRemove(value T, preds *[maxLevel]*orderednodeDesc[T], succs *[maxLevel]*orderednodeDesc[T]) int {
+func (s *FuncSet[T]) findNodeRemove(value T, preds *[maxLevel]*funcnode[T], succs *[maxLevel]*funcnode[T]) int {
 	// lFound represents the index of the first layer at which it found a node.
 	lFound, x := -1, s.header
 	for i := int(atomic.LoadUint64(&s.highestLevel)) - 1; i >= 0; i-- {
 		succ := x.atomicLoadNext(i)
-		for succ != nil && (succ.value > value) {
+		for succ != nil && s.less(succ.value, value) {
 			x = succ
 			succ = x.atomicLoadNext(i)
 		}
@@ -66,7 +67,7 @@ func (s *OrderedSetDesc[T]) findNodeRemove(value T, preds *[maxLevel]*orderednod
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if lFound == -1 && succ != nil && succ.value == value {
+		if lFound == -1 && succ != nil && !s.less(value, succ.value) {
 			lFound = i
 		}
 	}
@@ -75,11 +76,11 @@ func (s *OrderedSetDesc[T]) findNodeRemove(value T, preds *[maxLevel]*orderednod
 
 // findNodeAdd takes a value and two maximal-height arrays then searches exactly as in a sequential skip-set.
 // The returned preds and succs always satisfy preds[i] > value >= succs[i].
-func (s *OrderedSetDesc[T]) findNodeAdd(value T, preds *[maxLevel]*orderednodeDesc[T], succs *[maxLevel]*orderednodeDesc[T]) int {
+func (s *FuncSet[T]) findNodeAdd(value T, preds *[maxLevel]*funcnode[T], succs *[maxLevel]*funcnode[T]) int {
 	x := s.header
 	for i := int(atomic.LoadUint64(&s.highestLevel)) - 1; i >= 0; i-- {
 		succ := x.atomicLoadNext(i)
-		for succ != nil && (succ.value > value) {
+		for succ != nil && s.less(succ.value, value) {
 			x = succ
 			succ = x.atomicLoadNext(i)
 		}
@@ -87,15 +88,15 @@ func (s *OrderedSetDesc[T]) findNodeAdd(value T, preds *[maxLevel]*orderednodeDe
 		succs[i] = succ
 
 		// Check if the value already in the skip list.
-		if succ != nil && succ.value == value {
+		if succ != nil && !s.less(value, succ.value) {
 			return i
 		}
 	}
 	return -1
 }
 
-func unlockorderedDesc[T ordered](preds [maxLevel]*orderednodeDesc[T], highestLevel int) {
-	var prevPred *orderednodeDesc[T]
+func unlockfunc[T any](preds [maxLevel]*funcnode[T], highestLevel int) {
+	var prevPred *funcnode[T]
 	for i := highestLevel; i >= 0; i-- {
 		if preds[i] != prevPred { // the node could be unlocked by previous loop
 			preds[i].mu.Unlock()
@@ -108,9 +109,9 @@ func unlockorderedDesc[T ordered](preds [maxLevel]*orderednodeDesc[T], highestLe
 // returns false if this process can't insert this value, because another process has insert the same value.
 //
 // If the value is in the skip set but not fully linked, this process will wait until it is.
-func (s *OrderedSetDesc[T]) Add(value T) bool {
+func (s *FuncSet[T]) Add(value T) bool {
 	level := s.randomlevel()
-	var preds, succs [maxLevel]*orderednodeDesc[T]
+	var preds, succs [maxLevel]*funcnode[T]
 	for {
 		lFound := s.findNodeAdd(value, &preds, &succs)
 		if lFound != -1 { // indicating the value is already in the skip-list
@@ -129,7 +130,7 @@ func (s *OrderedSetDesc[T]) Add(value T) bool {
 		var (
 			highestLocked        = -1 // the highest level being locked by this process
 			valid                = true
-			pred, succ, prevPred *orderednodeDesc[T]
+			pred, succ, prevPred *funcnode[T]
 		)
 		for layer := 0; valid && layer < level; layer++ {
 			pred = preds[layer]   // target node's previous node
@@ -146,23 +147,23 @@ func (s *OrderedSetDesc[T]) Add(value T) bool {
 			valid = !pred.flags.Get(marked) && (succ == nil || !succ.flags.Get(marked)) && pred.loadNext(layer) == succ
 		}
 		if !valid {
-			unlockorderedDesc(preds, highestLocked)
+			unlockfunc(preds, highestLocked)
 			continue
 		}
 
-		nn := newOrderedNodeDesc(value, level)
+		nn := newFuncNode(value, level)
 		for layer := 0; layer < level; layer++ {
 			nn.storeNext(layer, succs[layer])
 			preds[layer].atomicStoreNext(layer, nn)
 		}
 		nn.flags.SetTrue(fullyLinked)
-		unlockorderedDesc(preds, highestLocked)
+		unlockfunc(preds, highestLocked)
 		atomic.AddInt64(&s.length, 1)
 		return true
 	}
 }
 
-func (s *OrderedSetDesc[T]) randomlevel() int {
+func (s *FuncSet[T]) randomlevel() int {
 	// Generate random level.
 	level := randomLevel()
 	// Update highest level if possible.
@@ -179,17 +180,17 @@ func (s *OrderedSetDesc[T]) randomlevel() int {
 }
 
 // Contains checks if the value is in the skip set.
-func (s *OrderedSetDesc[T]) Contains(value T) bool {
+func (s *FuncSet[T]) Contains(value T) bool {
 	x := s.header
 	for i := int(atomic.LoadUint64(&s.highestLevel)) - 1; i >= 0; i-- {
 		nex := x.atomicLoadNext(i)
-		for nex != nil && (nex.value > value) {
+		for nex != nil && s.less(nex.value, value) {
 			x = nex
 			nex = x.atomicLoadNext(i)
 		}
 
 		// Check if the value already in the skip list.
-		if nex != nil && nex.value == value {
+		if nex != nil && !s.less(value, nex.value) {
 			return nex.flags.MGet(fullyLinked|marked, fullyLinked)
 		}
 	}
@@ -197,12 +198,12 @@ func (s *OrderedSetDesc[T]) Contains(value T) bool {
 }
 
 // Remove removes a node from the skip set.
-func (s *OrderedSetDesc[T]) Remove(value T) bool {
+func (s *FuncSet[T]) Remove(value T) bool {
 	var (
-		nodeToRemove *orderednodeDesc[T]
+		nodeToRemove *funcnode[T]
 		isMarked     bool // represents if this operation mark the node
 		topLayer     = -1
-		preds, succs [maxLevel]*orderednodeDesc[T]
+		preds, succs [maxLevel]*funcnode[T]
 	)
 	for {
 		lFound := s.findNodeRemove(value, &preds, &succs)
@@ -225,7 +226,7 @@ func (s *OrderedSetDesc[T]) Remove(value T) bool {
 			var (
 				highestLocked        = -1 // the highest level being locked by this process
 				valid                = true
-				pred, succ, prevPred *orderednodeDesc[T]
+				pred, succ, prevPred *funcnode[T]
 			)
 			for layer := 0; valid && (layer <= topLayer); layer++ {
 				pred, succ = preds[layer], succs[layer]
@@ -242,7 +243,7 @@ func (s *OrderedSetDesc[T]) Remove(value T) bool {
 				valid = !pred.flags.Get(marked) && pred.loadNext(layer) == succ
 			}
 			if !valid {
-				unlockorderedDesc(preds, highestLocked)
+				unlockfunc(preds, highestLocked)
 				continue
 			}
 			for i := topLayer; i >= 0; i-- {
@@ -251,7 +252,7 @@ func (s *OrderedSetDesc[T]) Remove(value T) bool {
 				preds[i].atomicStoreNext(i, nodeToRemove.loadNext(i))
 			}
 			nodeToRemove.mu.Unlock()
-			unlockorderedDesc(preds, highestLocked)
+			unlockfunc(preds, highestLocked)
 			atomic.AddInt64(&s.length, -1)
 			return true
 		}
@@ -261,7 +262,7 @@ func (s *OrderedSetDesc[T]) Remove(value T) bool {
 
 // Range calls f sequentially for each value present in the skip set.
 // If f returns false, range stops the iteration.
-func (s *OrderedSetDesc[T]) Range(f func(value T) bool) {
+func (s *FuncSet[T]) Range(f func(value T) bool) {
 	x := s.header.atomicLoadNext(0)
 	for x != nil {
 		if !x.flags.MGet(fullyLinked|marked, fullyLinked) {
@@ -276,6 +277,6 @@ func (s *OrderedSetDesc[T]) Range(f func(value T) bool) {
 }
 
 // Len returns the length of this skip set.
-func (s *OrderedSetDesc[T]) Len() int {
+func (s *FuncSet[T]) Len() int {
 	return int(atomic.LoadInt64(&s.length))
 }

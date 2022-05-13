@@ -8,17 +8,17 @@ import (
 
 // {{.StructPrefix}}Set{{.StructSuffix}} represents a set based on skip list.
 type {{.StructPrefix}}Set{{.StructSuffix}}{{.TypeParam}} struct {
-	header       *{{.StructPrefixLow}}node{{.StructSuffix}}{{.TypeArgument}}
 	length       int64
 	highestLevel uint64 // highest level for now
+	header       *{{.StructPrefixLow}}node{{.StructSuffix}}{{.TypeArgument}}
     {{.ExtraFileds}}
 }
 
 type {{.StructPrefixLow}}node{{.StructSuffix}}{{.TypeParam}} struct {
+	flags bitflag
 	value {{.Type}}
 	next  optionalArray // [level]*{{.StructPrefixLow}}node{{.StructSuffix}}
 	mu    sync.Mutex
-	flags bitflag
 	level uint32
 }
 

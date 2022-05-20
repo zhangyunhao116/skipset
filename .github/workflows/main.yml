@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.18]
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [self-hosted]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:

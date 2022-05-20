@@ -28,4 +28,4 @@ jobs:
       
     - name: CI
       run: |
-        go version && go test ./... -race
+        go version && go test ./...

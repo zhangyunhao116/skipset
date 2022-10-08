@@ -114,7 +114,7 @@ func main() {
 	generate(basefunc)
 
 	// For New{{Type}}.
-	ts := []string{"String", "Float32", "Float64", "Int", "Int64", "Int32", "Uint64", "Uint32", "Uint"}
+	ts := []string{"String", "Int", "Int64", "Int32", "Uint64", "Uint32", "Uint"}
 	for _, t := range ts {
 		baseType := &Variant{
 			Package:         "skipset",

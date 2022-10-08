@@ -5,6 +5,8 @@
 //go:generate go run gen.go
 package skipset
 
+import "math"
+
 // New returns an empty skip set in ascending order.
 func New[T ordered]() *OrderedSet[T] {
 	var t T
@@ -63,44 +65,36 @@ func NewStringDesc() *StringSetDesc {
 	}
 }
 
+func isNaNf32(x float32) bool {
+	return x != x
+}
+
 // NewFloat32 returns an empty skip set in ascending order.
-func NewFloat32() *Float32Set {
-	h := newFloat32Node(0, maxLevel)
-	h.flags.SetTrue(fullyLinked)
-	return &Float32Set{
-		header:       h,
-		highestLevel: defaultHighestLevel,
-	}
+func NewFloat32() *FuncSet[float32] {
+	return NewFunc(func(a, b float32) bool {
+		return a < b || (isNaNf32(a) && !isNaNf32(b))
+	})
 }
 
 // NewFloat32Desc returns an empty skip set in descending order.
-func NewFloat32Desc() *Float32SetDesc {
-	h := newFloat32NodeDesc(0, maxLevel)
-	h.flags.SetTrue(fullyLinked)
-	return &Float32SetDesc{
-		header:       h,
-		highestLevel: defaultHighestLevel,
-	}
+func NewFloat32Desc() *FuncSet[float32] {
+	return NewFunc(func(a, b float32) bool {
+		return a > b || (isNaNf32(a) && !isNaNf32(b))
+	})
 }
 
 // NewFloat64 returns an empty skip set in ascending order.
-func NewFloat64() *Float64Set {
-	h := newFloat64Node(0, maxLevel)
-	h.flags.SetTrue(fullyLinked)
-	return &Float64Set{
-		header:       h,
-		highestLevel: defaultHighestLevel,
-	}
+func NewFloat64() *FuncSet[float64] {
+	return NewFunc(func(a, b float64) bool {
+		return a < b || (math.IsNaN(a) && !math.IsNaN(b))
+	})
 }
 
 // NewFloat64Desc returns an empty skip set in descending order.
-func NewFloat64Desc() *Float64SetDesc {
-	h := newFloat64NodeDesc(0, maxLevel)
-	h.flags.SetTrue(fullyLinked)
-	return &Float64SetDesc{
-		header:       h,
-		highestLevel: defaultHighestLevel,
-	}
+func NewFloat64Desc() *FuncSet[float64] {
+	return NewFunc(func(a, b float64) bool {
+		return a > b || (math.IsNaN(a) && !math.IsNaN(b))
+	})
 }
 
 // NewInt returns an empty skip set in ascending order.

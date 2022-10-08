@@ -413,3 +413,92 @@ func testStringSet(t *testing.T, newset func() anyskipset[string]) {
 		}
 	}
 }
+
+func TestFloatMap(t *testing.T) {
+	cases := []float64{
+		math.NaN(),
+		0.04,
+		math.NaN(),
+		0.05,
+		math.Inf(1),
+		0.04,
+		math.NaN(),
+		0.05,
+		math.Inf(-1),
+		math.Inf(1),
+		math.Inf(-1),
+	}
+	m := NewFloat64()
+	md := NewFloat64Desc()
+	m32 := NewFloat32()
+	m32d := NewFloat32Desc()
+	for _, k := range cases {
+		m.Add(k)
+		md.Add(k)
+		m32.Add(float32(k))
+		m32d.Add(float32(k))
+	}
+
+	var (
+		mr, mdr     []float64
+		m32r, m32dr []float32
+	)
+	m.Range(func(key float64) bool {
+		mr = append(mr, key)
+		return true
+	})
+	md.Range(func(key float64) bool {
+		mdr = append(mdr, key)
+		return true
+	})
+	m32.Range(func(key float32) bool {
+		m32r = append(m32r, key)
+		return true
+	})
+	m32d.Range(func(key float32) bool {
+		m32dr = append(m32dr, key)
+		return true
+	})
+
+	var (
+		asc = []float64{
+			math.NaN(), math.Inf(-1), 0.04, 0.05, math.Inf(1),
+		}
+		desc = []float64{
+			math.NaN(), math.Inf(1), 0.05, 0.04, math.Inf(-1),
+		}
+		asc32 = []float32{
+			float32(math.NaN()), float32(math.Inf(-1)), 0.04, 0.05, float32(math.Inf(1)),
+		}
+		desc32 = []float32{
+			float32(math.NaN()), float32(math.Inf(1)), 0.05, 0.04, float32(math.Inf(-1)),
+		}
+	)
+
+	checkEqual := func(a, b []float64) {
+		l := len(a)
+		if len(b) != l {
+			t.Fatal("invalid length", l)
+		}
+		for i := 0; i < l; i++ {
+			if a[i] != b[i] && !(math.IsNaN(a[i])) {
+				t.Fatal("not equal", i, a[i], b[i])
+			}
+		}
+	}
+	checkEqual32 := func(a, b []float32) {
+		l := len(a)
+		if len(b) != l {
+			t.Fatal("invalid length", l)
+		}
+		for i := 0; i < l; i++ {
+			if a[i] != b[i] && !(isNaNf32(a[i])) {
+				t.Fatal("not equal", i, a[i], b[i])
+			}
+		}
+	}
+	checkEqual(mr, asc)
+	checkEqual(mdr, desc)
+	checkEqual32(m32r, asc32)
+	checkEqual32(m32dr, desc32)
+}

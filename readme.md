@@ -4,32 +4,34 @@
 
 ## Introduction
 
-> From v0.12.0, the skipset requires Go version >= 1.18, if your Go version is lower, use v0.11.0 instead.
+> From v0.12.0, the skipset requires Go version >= 1.18, if your Go version is older, use v0.11.0 instead.
 
-skipset is a high-performance, scalable, concurrent-safe set based on skip-list. In the typical pattern(100000 operations, 90%CONTAINS 9%ADD 1%REMOVE, 8C16T), the skipset up to 15x faster than the built-in `sync.Map`.
+Skipset is a high-performance, scalable, concurrent-safe set based on the skip-list. In the typical pattern (100000 operations, 90%CONTAINS 9%ADD 1%REMOVE, 8C16T), the skipset is up to 15x faster than the built-in `sync.Map`.
 
 The main idea behind the skipset is [A Simple Optimistic Skiplist Algorithm](<https://people.csail.mit.edu/shanir/publications/LazySkipList.pdf>).
 
-Different from the sync.Map, the items in the skipset are always sorted, and the `Contains` and `Range` operations are wait-free (A goroutine is guaranteed to complete an operation as long as it keeps taking steps, regardless of the activity of other goroutines).
+Different from the `sync.Map`, the items in the skipset are always sorted, and the `Contains` and `Range` operations are wait-free (A goroutine is guaranteed to complete an operation as long as it keeps taking steps, regardless of the activity of other goroutines).
 
 The skipset is a set instead of a map, if you need a high-performance full replacement of `sync.Map`, see [skipmap](<https://github.com/zhangyunhao116/skipmap>).
+
+
 
 ## Features
 
 - Scalable, high-performance, concurrent-safe.
-- Wait-free Contains and Range operations (wait-free algorithms have stronger guarantees than lock-free).
+- Wait-free `Contains` and `Range` operations (wait-free algorithms have stronger guarantees than lock-free).
 - Sorted items.
 
 
 
 ## When should you use skipset
 
-In most cases, `skipset` is better than `sync.Map`, especially in these situations: 
+In most cases, `skipset` is better than `sync.Map`, especially in these situations:
 
-- **Concurrent calls multiple operations**. Such as use both `Range` and `Add` at the same time, in this situation, use skipset can obtain very large improvement on performance.
-- **Memory intensive**. The skipset save at least 50% memory in the benchmark.
+- **Concurrent calls of multiple operations**. Such as using both `Range` and `Add` at the same time. In this situation, using skipset can greatly improve the performance.
+- **Memory intensive**. The skipset saves at least 50% of the memory in the benchmark.
 
-If only one goroutine access the set for the most of the time, such as insert a batch of elements and then use only `Contains` or `Range`, use built-in map is better.
+If only one goroutine accesses the set for most of the time, such to insert a batch of elements and then uses only `Contains` or `Range`, using built-in map is better.
 
 
 
@@ -72,9 +74,9 @@ func main() {
 
 
 
-From `v0.12.0`, you can use generic version APIs.
+From `v0.12.0` on, you can use a generic version of APIs.
 
-**Note that generic APIs are always slower than typed APIs, but are more suitable for some scenarios such as functional programming.**
+**Note that the generic APIs are always slower than typed APIs, but are more suitable for some scenarios such as functional programming.**
 
 > e.g. `New[int]` is \~2x slower than `NewInt`, and `NewFunc(func(a, b int) bool { return a < b })` is 1\~2x slower than `New[int]`.
 >
@@ -114,7 +116,7 @@ func main() {
 
 ## Benchmark
 
-> based on typed APIs.
+> Based on typed APIs.
 
 Go version: go1.16.2 linux/amd64
 

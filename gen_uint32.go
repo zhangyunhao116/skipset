@@ -274,6 +274,37 @@ func (s *Uint32Set) Range(f func(value uint32) bool) {
 	}
 }
 
+// RangeFrom calls f sequentially for all values with `value >= start` in the skip set.
+// If f returns false, range stops the iteration.
+func (s *Uint32Set) RangeFrom(start uint32, f func(value uint32) bool) {
+	var (
+		x   = s.header
+		nex *uint32node
+	)
+	for i := int(atomic.LoadUint64(&s.highestLevel)) - 1; i >= 0; i-- {
+		nex = x.atomicLoadNext(i)
+		for nex != nil && (nex.value < start) {
+			x = nex
+			nex = x.atomicLoadNext(i)
+		}
+		// Check if the value already in the skip list.
+		if nex != nil && nex.value == start {
+			break
+		}
+	}
+
+	for nex != nil {
+		if !nex.flags.MGet(fullyLinked|marked, fullyLinked) {
+			nex = nex.atomicLoadNext(0)
+			continue
+		}
+		if !f(nex.value) {
+			break
+		}
+		nex = nex.atomicLoadNext(0)
+	}
+}
+
 // Len returns the length of this skip set.
 func (s *Uint32Set) Len() int {
 	return int(atomic.LoadInt64(&s.length))

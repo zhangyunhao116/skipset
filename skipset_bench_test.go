@@ -144,6 +144,10 @@ func (m *anySyncMap[T]) Range(f func(value T) bool) {
 	})
 }
 
+func (m *anySyncMap[T]) RangeFrom(start T, f func(value T) bool) {
+	panic("TODO")
+}
+
 func (m *anySyncMap[T]) Len() int {
 	var i int
 	m.data.Range(func(_, _ any) bool {

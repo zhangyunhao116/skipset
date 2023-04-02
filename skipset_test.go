@@ -84,6 +84,7 @@ type anyskipset[T any] interface {
 	Remove(v T) bool
 	Contains(v T) bool
 	Range(f func(v T) bool)
+	RangeFrom(start T, f func(v T) bool)
 	Len() int
 }
 

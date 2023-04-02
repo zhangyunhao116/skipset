@@ -274,6 +274,37 @@ func (s *Int64SetDesc) Range(f func(value int64) bool) {
 	}
 }
 
+// RangeFrom calls f sequentially for all values with `value >= start` in the skip set.
+// If f returns false, range stops the iteration.
+func (s *Int64SetDesc) RangeFrom(start int64, f func(value int64) bool) {
+	var (
+		x   = s.header
+		nex *int64nodeDesc
+	)
+	for i := int(atomic.LoadUint64(&s.highestLevel)) - 1; i >= 0; i-- {
+		nex = x.atomicLoadNext(i)
+		for nex != nil && (nex.value > start) {
+			x = nex
+			nex = x.atomicLoadNext(i)
+		}
+		// Check if the value already in the skip list.
+		if nex != nil && nex.value == start {
+			break
+		}
+	}
+
+	for nex != nil {
+		if !nex.flags.MGet(fullyLinked|marked, fullyLinked) {
+			nex = nex.atomicLoadNext(0)
+			continue
+		}
+		if !f(nex.value) {
+			break
+		}
+		nex = nex.atomicLoadNext(0)
+	}
+}
+
 // Len returns the length of this skip set.
 func (s *Int64SetDesc) Len() int {
 	return int(atomic.LoadInt64(&s.length))

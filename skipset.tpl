@@ -273,6 +273,37 @@ func (s *{{.StructPrefix}}Set{{.StructSuffix}}{{.TypeArgument}}) Range(f func(va
 	}
 }
 
+// RangeFrom calls f sequentially for all values with `value >= start` in the skip set.
+// If f returns false, range stops the iteration.
+func (s *{{.StructPrefix}}Set{{.StructSuffix}}{{.TypeArgument}}) RangeFrom(start {{.Type}}, f func(value {{.Type}}) bool) {
+	var (
+		x   = s.header
+		nex *{{.StructPrefixLow}}node{{.StructSuffix}}{{.TypeArgument}}
+	)
+	for i := int(atomic.LoadUint64(&s.highestLevel)) - 1; i >= 0; i-- {
+		nex = x.atomicLoadNext(i)
+		for nex != nil && {{Less "nex.value" "start"}} {
+			x = nex
+			nex = x.atomicLoadNext(i)
+		}
+		// Check if the value already in the skip list.
+		if nex != nil && {{Equal "nex.value" "start"}} {
+			break
+		}
+	}
+
+	for nex != nil {
+		if !nex.flags.MGet(fullyLinked|marked, fullyLinked) {
+			nex = nex.atomicLoadNext(0)
+			continue
+		}
+		if !f(nex.value) {
+			break
+		}
+		nex = nex.atomicLoadNext(0)
+	}
+}
+
 // Len returns the length of this skip set.
 func (s *{{.StructPrefix}}Set{{.StructSuffix}}{{.TypeArgument}}) Len() int {
 	return int(atomic.LoadInt64(&s.length))
